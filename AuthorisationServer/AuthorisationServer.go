@@ -1,11 +1,11 @@
 package AuthorisationServer
 
 import (
-	"CitadelCore/Shared/Socket"
+	"CitadelCore/AuthorisationServer/Session"
 	"fmt"
 )
 
 func Start() {
 	fmt.Println("Starting authserver...")
-	Socket.Start(3724)
+	Session.Test()
 }

@@ -8,5 +8,5 @@ install:
 clean:
 	rm -rf ./bin
 
-run:
-	go run main.go
+run authserver:
+	go run Command/AuthorisationServer/main.go
