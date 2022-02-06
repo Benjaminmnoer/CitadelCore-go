@@ -15,22 +15,24 @@ func Test() {
 	// var buffer []byte
 	for {
 		connection, _ := server.Accept()
-		buffer := make([]byte, 1024)
-		size, error := connection.Read(buffer)
+		decoder := gob.NewDecoder(connection)
+		// buffer := new(bytes.Buffer)
+		// size, error := connection.Read(buffer.Bytes())
 
-		if error != nil {
-			fmt.Println("Error in reading message!")
-			continue
-		}
+		// if error != nil {
+		// 	fmt.Println("Error in reading message!")
+		// 	continue
+		// }
 
-		fmt.Printf("Size of message received %d\n", size)
+		// fmt.Printf("Size of message received %d\n", size)
 
 		logonchallenge := model.AuthorisationLogonChallenge{}
-		decoder := gob.NewDecoder(buffer)
-		decoder.Decode(logonchallenge)
+		// reader := bytes.NewReader(buffer.Bytes())
+		// error = binary.Read(reader, binary.LittleEndian, &logonchallenge)
+		error := decoder.Decode(&logonchallenge)
 
 		if error != nil {
-			fmt.Println("Error in unmarshalling")
+			fmt.Printf("Error in byte conversion. Error code %s", error.Error())
 			continue
 		}
 
