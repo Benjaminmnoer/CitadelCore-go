@@ -48,22 +48,19 @@ func Test(username string) ([]byte, error) {
 }
 
 func (connection MysqlDatabaseConnection) ExecuteQuerySingleResult(query string, result interface{}, args ...interface{}) (interface{}, error) {
+	fmt.Printf("Arguments\n")
+	for i, arg := range args {
+		fmt.Printf("Argument: %s, i: %d\n", arg, i)
+	}
+
 	db, err := sql.Open("mysql", connection.config.FormatDSN())
 	if err != nil {
 		fmt.Printf("mysql-db: error opening database connection. Error: %s\n", err)
 		return nil, err
 	}
+	// defer db.Close()
 
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		fmt.Printf("mysql-db: error executing query. Error: %s\n", err)
-		return nil, err
-	}
-
-	hasresult := rows.Next()
-	if !hasresult {
-		return nil, errors.New("Error calling next")
-	}
+	rows := db.QueryRow(query, args...)
 
 	fields := Reflection.GetFields(result)
 	err = rows.Scan(fields...)

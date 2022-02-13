@@ -1,12 +1,14 @@
 package Session
 
 import (
+	srp "CitadelCore/AuthorisationServer/SRP"
 	"fmt"
 	"net"
 )
 
 func Test() {
 	fmt.Println("Session manager started")
+	srp.InitializaSRP()
 
 	server, _ := net.Listen("tcp", "127.0.0.1:3724")
 
