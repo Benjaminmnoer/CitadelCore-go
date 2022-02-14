@@ -1,4 +1,4 @@
-package model
+package Model
 
 type LogonProofResponse struct {
 	Command      uint8

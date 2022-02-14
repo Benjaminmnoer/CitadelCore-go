@@ -49,7 +49,7 @@ func handleSession(session Authsession) {
 		error = binary.Write(output, binary.LittleEndian, response)
 
 		if error != nil {
-			fmt.Println("Error in writing response!")
+			fmt.Printf("Error in writing response! %s\n", error)
 			return
 		}
 

@@ -40,12 +40,28 @@ func InitializaSRP() {
 	Prime = Prime.SetBytes(res)
 }
 
-func GetParameters() (generator []byte, prime []byte) {
-	return Generator.Bytes(), Prime.Bytes()
+func GetParameters() (generator big.Int, prime big.Int) {
+	return *Generator, *Prime
+}
+
+func newSrp() SRP6 {
+	return SRP6{
+		ephemeralPublicA:  big.NewInt(0),
+		ephemeralPrivateB: big.NewInt(0),
+		ephemeralPublicB:  big.NewInt(0),
+		preSessionKey:     big.NewInt(0),
+		sessionKey:        big.NewInt(0),
+		u:                 big.NewInt(0),
+		verifier:          big.NewInt(0),
+		salt:              big.NewInt(0),
+		m1:                big.NewInt(0),
+		m2:                big.NewInt(0),
+		username:          "",
+	}
 }
 
 func StartSRP(name string, s []byte, v []byte) (SRP6, error) {
-	srp := SRP6{}
+	srp := newSrp()
 
 	srp.username = name
 	srp.salt.SetBytes(s)

@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	username = "trinity"
-	password = "trinity"
-	address  = "127.0.0.1"
+	username = "citadelcore"
+	password = "citadelcore"
+	address  = "127.0.0.1:3306"
 	database = "auth"
 )
 
@@ -23,8 +23,10 @@ type AuthorisationRepository struct {
 
 func (authRepo AuthorisationRepository) GetAccountInformation(accountname string) model.AccountInformation {
 	fmt.Printf("Querying for name: %s\n", accountname)
+	query := _ACCOUNTINFO_QUERY // strings.Replace(_ACCOUNTINFO_QUERY, "?", accountname, 1)
+	fmt.Println(query)
 	accountinfo := model.AccountInformation{}
-	_, err := authRepo.dbconnection.ExecuteQuerySingleResult(_ACCOUNTINFO_QUERY, &accountinfo, accountname)
+	_, err := authRepo.dbconnection.ExecuteQuerySingleResult(query, &accountinfo, accountname)
 	if err != nil {
 		panic(err)
 	}

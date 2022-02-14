@@ -1,4 +1,4 @@
-package model
+package Model
 
 type LogonChallenge struct {
 	Cmd               uint8
@@ -19,5 +19,6 @@ type LogonChallenge struct {
 }
 
 func (lc LogonChallenge) GetAccountName() string {
-	return string(lc.Accountname[:])
+	result := string(lc.Accountname[:lc.Accountnamelength])
+	return result
 }

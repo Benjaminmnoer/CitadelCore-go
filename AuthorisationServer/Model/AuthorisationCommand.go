@@ -1,4 +1,4 @@
-package model
+package Model
 
 const (
 	AuthLogonChallenge     uint8 = 0x00

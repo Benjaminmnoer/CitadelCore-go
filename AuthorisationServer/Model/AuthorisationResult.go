@@ -1,4 +1,4 @@
-package model
+package Model
 
 type AuthorisationResult uint8
 
