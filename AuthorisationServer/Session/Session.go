@@ -17,12 +17,13 @@ var repository = Repository.InitializeAuthorisationRepository()
 type Authsession struct {
 	build      string
 	connection Connection.TcpConnection
-	srp        SRP.SRP6
+	srp        *SRP.SRP6
 	done       bool
 }
 
 func StartSession(connection net.Conn) {
 	session := Authsession{
+		// TODO: Reduce deadline?
 		connection: Connection.CreateTcpConnection(connection, "500ms"),
 		done:       false,
 	}
@@ -37,7 +38,7 @@ func handleSession(session Authsession) {
 		size, error := session.connection.Read(&buffer)
 
 		if error != nil {
-			fmt.Println("Error in reading message!")
+			fmt.Printf("Error in reading message! %s\n", error)
 			return
 		}
 
@@ -48,11 +49,24 @@ func handleSession(session Authsession) {
 		error = binary.Write(output, binary.LittleEndian, response)
 
 		if error != nil {
+			fmt.Printf("Error in serializing response! %s\n", error)
+			return
+		}
+
+		size, error = session.connection.Write(output.Bytes())
+
+		if error != nil {
 			fmt.Printf("Error in writing response! %s\n", error)
 			return
 		}
 
-		session.connection.Write(output.Bytes())
+		fmt.Printf("Wrote %d bytes\n", size)
+
+		// if session.done {
+		// TODO: Move logic elsewhere
+		// session.connection.Connection.Close()
+		// session.done = true
+		// }
 	}
 
 	fmt.Println("Session finished")
@@ -83,8 +97,12 @@ func delegateCommand(cmd uint8, data []byte, session Authsession) interface{} {
 		return response
 	case model.AuthLogonProof:
 		fmt.Println("AuthlogonProof registered")
+		logonproof := model.LogonProof{}
+		convertData(data, &logonproof)
+
+		response := Handlers.HandleLogonProof(logonproof, session.srp)
 		session.done = false // Expect realmlist command after proof.
-		return nil
+		return response
 	case model.AuthReconnectChallenge:
 		fmt.Println("AuthReconnectChallenge registered")
 		return nil

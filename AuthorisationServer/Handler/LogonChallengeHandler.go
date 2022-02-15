@@ -7,7 +7,7 @@ import (
 )
 
 func HandleLogonChallenge(dto model.LogonChallenge,
-	repository Repository.AuthorisationRepository) (model.LogonChallengeResponse, SRP.SRP6) {
+	repository Repository.AuthorisationRepository) (model.LogonChallengeResponse, *SRP.SRP6) {
 	accountinfo := repository.GetAccountInformation(dto.GetAccountName())
 	srp, err := SRP.StartSRP(accountinfo.Accountname, accountinfo.Salt[:], accountinfo.Verifier[:])
 	generator, prime := SRP.GetParameters()

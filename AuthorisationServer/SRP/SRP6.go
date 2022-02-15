@@ -18,14 +18,14 @@ var (
 type SRP6 struct {
 	ephemeralPublicA  *big.Int
 	ephemeralPrivateB *big.Int
-	EphemeralPublicB  *big.Int
+	EphemeralPublicB  *big.Int // Must be public
 	preSessionKey     *big.Int
 	sessionKey        *big.Int
 	u                 *big.Int
 	verifier          *big.Int
 	salt              *big.Int
 	m1                *big.Int
-	m2                *big.Int
+	M2                *big.Int // Must be public
 	username          string
 }
 
@@ -55,12 +55,12 @@ func newSrp() SRP6 {
 		verifier:          big.NewInt(0),
 		salt:              big.NewInt(0),
 		m1:                big.NewInt(0),
-		m2:                big.NewInt(0),
+		M2:                big.NewInt(0),
 		username:          "",
 	}
 }
 
-func StartSRP(name string, s []byte, v []byte) (SRP6, error) {
+func StartSRP(name string, s []byte, v []byte) (*SRP6, error) {
 	srp := newSrp()
 
 	srp.username = name
@@ -81,7 +81,7 @@ func StartSRP(name string, s []byte, v []byte) (SRP6, error) {
 		panic("Aborting")
 	}
 
-	return srp, nil
+	return &srp, nil
 }
 
 func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
@@ -106,7 +106,7 @@ func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 
 	temp = &big.Int{}
 	bytes := append(append(srp.ephemeralPublicA.Bytes(), srp.m1.Bytes()...), srp.sessionKey.Bytes()...)
-	srp.m2.SetBytes(cryptography.Sha1Bytes(bytes))
+	srp.M2.SetBytes(cryptography.Sha1Bytes(bytes))
 
 	return nil
 }
