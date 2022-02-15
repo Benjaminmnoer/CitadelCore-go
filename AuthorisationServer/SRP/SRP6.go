@@ -26,7 +26,7 @@ type SRP6 struct {
 	salt              *big.Int
 	m1                *big.Int
 	M2                *big.Int // Must be public
-	username          string
+	Username          string
 }
 
 func InitializaSRP() {
@@ -56,14 +56,14 @@ func newSrp() SRP6 {
 		salt:              big.NewInt(0),
 		m1:                big.NewInt(0),
 		M2:                big.NewInt(0),
-		username:          "",
+		Username:          "",
 	}
 }
 
 func StartSRP(name string, s []byte, v []byte) (*SRP6, error) {
 	srp := newSrp()
 
-	srp.username = name
+	srp.Username = name
 	srp.salt.SetBytes(s)
 	srp.verifier.SetBytes(s)
 	srp.ephemeralPrivateB.SetBytes(cryptography.GetNonce())
@@ -76,10 +76,15 @@ func StartSRP(name string, s []byte, v []byte) (*SRP6, error) {
 	term2.Exp(Generator, srp.ephemeralPrivateB, Prime)
 	srp.EphemeralPublicB.Add(term1, term2)
 
-	if srp.salt.Cmp(bigIntZero) <= 0 || srp.verifier.Cmp(bigIntZero) <= 0 || srp.EphemeralPublicB.Cmp(bigIntZero) <= 0 {
+	if srp.salt.Cmp(bigIntZero) <= 0 ||
+		srp.verifier.Cmp(bigIntZero) <= 0 ||
+		srp.ephemeralPrivateB.Cmp(bigIntZero) <= 0 ||
+		srp.EphemeralPublicB.Cmp(bigIntZero) <= 0 {
 		fmt.Printf("Error in setting SRP values.\nSalt: %v\nVerifier: %v\nEphemeral Public B: %v\n", srp.salt, srp.verifier, srp.EphemeralPublicB)
 		panic("Aborting")
 	}
+
+	fmt.Printf("SRP pointer returned: %p\n", &srp)
 
 	return &srp, nil
 }

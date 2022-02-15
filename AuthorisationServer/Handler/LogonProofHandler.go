@@ -20,5 +20,6 @@ func HandleLogonProof(dto Model.LogonProof, srp *SRP.SRP6) Model.LogonProofRespo
 	response.M2 = m2arr
 	response.SurveyId = 0
 	response.LoginFlags = 0
+
 	return response
 }

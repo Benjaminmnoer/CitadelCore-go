@@ -28,10 +28,10 @@ func StartSession(connection net.Conn) {
 		done:       false,
 	}
 
-	handleSession(session)
+	handleSession(&session)
 }
 
-func handleSession(session Authsession) {
+func handleSession(session *Authsession) {
 	fmt.Println("Session started")
 	for !session.done {
 		buffer := make([]byte, 256)
@@ -64,15 +64,15 @@ func handleSession(session Authsession) {
 
 		// if session.done {
 		// TODO: Move logic elsewhere
-		// session.connection.Connection.Close()
-		// session.done = true
+		session.connection.Connection.Close()
+		session.done = true
 		// }
 	}
 
 	fmt.Println("Session finished")
 }
 
-func delegateCommand(cmd uint8, data []byte, session Authsession) interface{} {
+func delegateCommand(cmd uint8, data []byte, session *Authsession) interface{} {
 	switch cmd {
 	case model.AuthLogonChallenge:
 		fmt.Println("AuthlogonChallenge registered")
@@ -83,6 +83,8 @@ func delegateCommand(cmd uint8, data []byte, session Authsession) interface{} {
 		// fmt.Printf("Accountname: %s\n", logonchallenge.Accountname)
 
 		response, srp := Handlers.HandleLogonChallenge(logonchallenge, repository)
+
+		fmt.Printf("SRP pointer returned: %p\n", srp)
 
 		// fmt.Println("Response")
 		// res2p, _ := json.Marshal(response)
@@ -99,6 +101,7 @@ func delegateCommand(cmd uint8, data []byte, session Authsession) interface{} {
 		fmt.Println("AuthlogonProof registered")
 		logonproof := model.LogonProof{}
 		convertData(data, &logonproof)
+		fmt.Printf("SRP pointer returned: %p\n", session.srp)
 
 		response := Handlers.HandleLogonProof(logonproof, session.srp)
 		session.done = false // Expect realmlist command after proof.
