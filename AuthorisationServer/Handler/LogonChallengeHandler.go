@@ -21,7 +21,9 @@ func HandleLogonChallenge(dto model.LogonChallenge,
 	response.Command = model.AuthLogonChallenge
 	response.ProtocolVersion = 0
 	response.Status = model.Success
-	response.Salt = accountinfo.Salt
+	var saltarray [32]byte
+	copy(saltarray[:], accountinfo.Salt)
+	response.Salt = saltarray
 	response.Flags = 0
 	response.GeneratorSize = 1
 	response.Generator = uint8(generator.Int64())
@@ -29,6 +31,9 @@ func HandleLogonChallenge(dto model.LogonChallenge,
 	var primearray [32]byte
 	copy(primearray[:], prime.Bytes()[:32])
 	response.Prime = primearray
+	var epharray [32]byte
+	copy(epharray[:], srp.EphemeralPublicB.Bytes())
+	response.EphemeralPublicB = epharray
 
 	return response, srp
 }

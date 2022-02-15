@@ -8,7 +8,6 @@ import (
 	"CitadelCore/Shared/Connection"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"net"
 )
@@ -66,18 +65,18 @@ func delegateCommand(cmd uint8, data []byte, session Authsession) interface{} {
 		logonchallenge := model.LogonChallenge{}
 		convertData(data, &logonchallenge)
 
-		fmt.Printf("Gamename: %s\n", logonchallenge.Gamename)
-		fmt.Printf("Accountname: %s\n", logonchallenge.Accountname)
+		// fmt.Printf("Gamename: %s\n", logonchallenge.Gamename)
+		// fmt.Printf("Accountname: %s\n", logonchallenge.Accountname)
 
 		response, srp := Handlers.HandleLogonChallenge(logonchallenge, repository)
 
-		fmt.Println("Response")
-		res2p, _ := json.Marshal(response)
-		fmt.Println(string(res2p))
+		// fmt.Println("Response")
+		// res2p, _ := json.Marshal(response)
+		// fmt.Println(string(res2p))
 
-		fmt.Println("SRP")
-		srp2p, _ := json.Marshal(srp)
-		fmt.Println(string(srp2p))
+		// fmt.Println("SRP")
+		// srp2p, _ := json.Marshal(srp)
+		// fmt.Println(string(srp2p))
 
 		session.srp = srp
 		session.done = false // Expect proof
