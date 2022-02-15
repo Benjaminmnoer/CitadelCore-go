@@ -64,8 +64,8 @@ func handleSession(session *Authsession) {
 
 		// if session.done {
 		// TODO: Move logic elsewhere
-		session.connection.Connection.Close()
-		session.done = true
+		// session.connection.Connection.Close()
+		// session.done = true
 		// }
 	}
 

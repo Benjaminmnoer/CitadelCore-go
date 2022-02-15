@@ -4,6 +4,7 @@ import (
 	model "CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -38,6 +39,10 @@ func HandleLogonChallenge(dto model.LogonChallenge,
 	var epharray [32]byte
 	copy(epharray[:], srp.EphemeralPublicB.Bytes())
 	response.EphemeralPublicB = epharray
+	var crcarray [16]byte
+	crchash, err := hex.DecodeString("baa31e99a00b2157fc373fb369cdd2f1")
+	copy(crcarray[:], crchash)
+	response.CRC = crcarray
 
 	return response, srp
 }
