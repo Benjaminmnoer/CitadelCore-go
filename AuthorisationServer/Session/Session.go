@@ -14,28 +14,16 @@ import (
 
 var repository = Repository.InitializeAuthorisationRepository()
 
-type Authsession struct {
-	build      string
-	connection Connection.TcpConnection
-	srp        *SRP.SRP6
-	done       bool
-}
+func HandleSession(conn net.Conn) {
+	connection := Connection.CreateTcpConnection(conn, "500ms")
+	endsession := false
+	srp := SRP.NewSrp()
 
-func StartSession(connection net.Conn) {
-	session := Authsession{
-		// TODO: Reduce deadline?
-		connection: Connection.CreateTcpConnection(connection, "500ms"),
-		done:       false,
-	}
-
-	handleSession(&session)
-}
-
-func handleSession(session *Authsession) {
 	fmt.Println("Session started")
-	for !session.done {
+	for !endsession {
+		fmt.Println("Reading data")
 		buffer := make([]byte, 256)
-		size, error := session.connection.Read(&buffer)
+		size, error := connection.Read(&buffer)
 
 		if error != nil {
 			fmt.Printf("Error in reading message! %s\n", error)
@@ -43,17 +31,18 @@ func handleSession(session *Authsession) {
 		}
 
 		fmt.Printf("Size of message read %d\n", size)
-
-		response := delegateCommand(buffer[0], buffer, session)
+		fmt.Printf("Command received %d\n", buffer[0])
+		response, done := delegateCommand(buffer[0], buffer, srp)
+		endsession = done
 		output := new(bytes.Buffer)
-		error = binary.Write(output, binary.LittleEndian, response)
+		error = binary.Write(output, binary.BigEndian, response)
 
 		if error != nil {
 			fmt.Printf("Error in serializing response! %s\n", error)
 			return
 		}
 
-		size, error = session.connection.Write(output.Bytes())
+		size, error = connection.Write(output.Bytes())
 
 		if error != nil {
 			fmt.Printf("Error in writing response! %s\n", error)
@@ -62,17 +51,18 @@ func handleSession(session *Authsession) {
 
 		fmt.Printf("Wrote %d bytes\n", size)
 
-		// if session.done {
-		// TODO: Move logic elsewhere
-		// session.connection.Connection.Close()
-		// session.done = true
-		// }
+		if done {
+			// TODO: Move logic elsewhere
+			connection.Connection.Close()
+			// session.done = true
+		}
 	}
 
 	fmt.Println("Session finished")
 }
 
-func delegateCommand(cmd uint8, data []byte, session *Authsession) interface{} {
+func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, bool) {
+	// response := interface{}
 	switch cmd {
 	case model.AuthLogonChallenge:
 		fmt.Println("AuthlogonChallenge registered")
@@ -82,7 +72,7 @@ func delegateCommand(cmd uint8, data []byte, session *Authsession) interface{} {
 		// fmt.Printf("Gamename: %s\n", logonchallenge.Gamename)
 		// fmt.Printf("Accountname: %s\n", logonchallenge.Accountname)
 
-		response, srp := Handlers.HandleLogonChallenge(logonchallenge, repository)
+		response := Handlers.HandleLogonChallenge(logonchallenge, repository, srp)
 
 		fmt.Printf("SRP pointer returned: %p\n", srp)
 
@@ -94,31 +84,27 @@ func delegateCommand(cmd uint8, data []byte, session *Authsession) interface{} {
 		// srp2p, _ := json.Marshal(srp)
 		// fmt.Println(string(srp2p))
 
-		session.srp = srp
-		session.done = false // Expect proof
-		return response
+		return response, false // Expect more
 	case model.AuthLogonProof:
 		fmt.Println("AuthlogonProof registered")
 		logonproof := model.LogonProof{}
 		convertData(data, &logonproof)
-		fmt.Printf("SRP pointer returned: %p\n", session.srp)
+		fmt.Printf("SRP pointer returned: %p\n", srp)
 
-		response := Handlers.HandleLogonProof(logonproof, session.srp)
-		session.done = false // Expect realmlist command after proof.
-		return response
+		response := Handlers.HandleLogonProof(logonproof, srp)
+		return response, false // Expect realmlist command after proof.
 	case model.AuthReconnectChallenge:
 		fmt.Println("AuthReconnectChallenge registered")
-		return nil
+		return nil, true
 	case model.AuthReconnectProof:
 		fmt.Println("AuthReconnectProof registered")
-		session.done = true // Dont expect anymore after this. Perhaps realmlist?
-		return nil
+		return nil, true // Dont expect anymore after this. Perhaps realmlist?
 	case model.RealmList:
 		fmt.Println("Realmlist registered")
-		return nil
+		return nil, true //Model.RealmListResponse
 	}
 
-	return nil
+	return nil, true
 }
 
 func convertData(data []byte, result interface{}) {

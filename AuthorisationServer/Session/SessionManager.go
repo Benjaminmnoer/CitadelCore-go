@@ -19,6 +19,6 @@ func Test() {
 			fmt.Printf("Error when accepting connection: %s\n", error)
 		}
 
-		StartSession(connection)
+		HandleSession(connection)
 	}
 }

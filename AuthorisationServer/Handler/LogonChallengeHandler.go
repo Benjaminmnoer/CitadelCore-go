@@ -9,13 +9,13 @@ import (
 )
 
 func HandleLogonChallenge(dto model.LogonChallenge,
-	repository Repository.AuthorisationRepository) (model.LogonChallengeResponse, *SRP.SRP6) {
+	repository Repository.AuthorisationRepository, srp *SRP.SRP6) model.LogonChallengeResponse {
 	accountinfo := repository.GetAccountInformation(dto.GetAccountName())
-	srp, err := SRP.StartSRP(accountinfo.Accountname, accountinfo.Salt[:], accountinfo.Verifier[:])
+	err := srp.StartSRP(accountinfo.Accountname, accountinfo.Salt[:], accountinfo.Verifier[:])
 
 	fmt.Printf("SRP pointer returned: %p\n", srp)
 
-	generator, prime := SRP.GetParameters()
+	generator, prime := SRP.GetConstants()
 
 	if err != nil {
 		panic(err)
@@ -44,5 +44,5 @@ func HandleLogonChallenge(dto model.LogonChallenge,
 	copy(crcarray[:], crchash)
 	response.CRC = crcarray
 
-	return response, srp
+	return response
 }
