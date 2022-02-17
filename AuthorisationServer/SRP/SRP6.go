@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 )
 
 var (
 	bigIntZero = big.NewInt(0)
+	bigIntOne  = big.NewInt(1)
 	Generator  = big.NewInt(7)
 	Prime      = big.NewInt(0)
 	multiplier = big.NewInt(3)
@@ -28,6 +30,7 @@ type SRP6 struct {
 	m1                *big.Int
 	M2                *big.Int // Must be public
 	Username          string
+	badstate          bool
 }
 
 func InitializaSRP() {
@@ -47,7 +50,7 @@ func InitializaSRP() {
 }
 
 // Returns server SRP constants.
-func GetConstants() (generator *big.Int, prime *big.Int) {
+func GetConstants() (*big.Int, *big.Int) {
 	return Generator, Prime
 }
 
@@ -65,6 +68,7 @@ func NewSrp() *SRP6 {
 		m1:                big.NewInt(0),
 		M2:                big.NewInt(0),
 		Username:          "",
+		badstate:          false,
 	}
 }
 
@@ -75,7 +79,11 @@ func (srp *SRP6) StartSRP(name string, s []byte, v []byte) error {
 	srp.Username = name
 	srp.salt.SetBytes(s)
 	srp.verifier.SetBytes(s)
-	error := srp.generatePrivateKeys()
+	error := srp.generateServerKeys()
+
+	if error != nil {
+		return error
+	}
 
 	fmt.Printf("SRP pointer returned: %p\n", &srp)
 
@@ -85,14 +93,23 @@ func (srp *SRP6) StartSRP(name string, s []byte, v []byte) error {
 func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 	srp.ephemeralPublicA.SetBytes(ephemeralPublicA)
 	srp.m1.SetBytes(m1)
+	fmt.Printf("A: %s\nM1: %s\n", hexFromBigInt(srp.ephemeralPublicA), hexFromBigInt(srp.m1))
 
 	if srp.ephemeralPublicA.Cmp(bigIntZero) == 0 || srp.m1.Cmp(bigIntZero) == 0 {
 		return errors.New("srp: Error setting proof values")
 	}
 
-	temp := &big.Int{}
-	temp.Add(srp.ephemeralPublicA, srp.EphemeralPublicB)
-	srp.u.SetBytes(cryptography.Sha1Bytes(temp.Bytes()))
+	// err := srp.IsPublicValid()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// temp := &big.Int{}
+	// temp.Add(srp.ephemeralPublicA, srp.EphemeralPublicB)
+	publica := hexFromBigInt(srp.ephemeralPublicA)
+	publicb := hexFromBigInt(srp.EphemeralPublicB)
+	// srp.u.SetBytes(cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.EphemeralPublicB.Bytes()))
+	srp.u.SetBytes(cryptography.Sha1Bytes([]byte(fmt.Sprintf("%s%s", publica, publicb))))
 
 	base := &big.Int{}
 
@@ -107,16 +124,55 @@ func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 		return err
 	}
 
-	temp = &big.Int{}
-	bytes := append(append(srp.ephemeralPublicA.Bytes(), srp.m1.Bytes()...), srp.sessionKey.Bytes()...)
-	srp.M2.SetBytes(cryptography.Sha1Bytes(bytes))
+	srp.M2.SetBytes(cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.m1.Bytes(), srp.sessionKey.Bytes()))
 
 	return nil
 }
 
+// func (srp *SRP6) IsPublicValid() error {
+// 	hexa := hex.EncodeToString(srp.ephemeralPublicA.Bytes())
+// 	hexb := hex.EncodeToString(srp.EphemeralPublicB.Bytes())
+// 	fmt.Printf("A: %s\nB: %s\n", hexa, hexb)
+// 	aresult := big.Int{}
+// 	bresult := big.Int{}
+
+// 	if aresult.Mod(srp.ephemeralPublicA, Prime); aresult.Sign() == 0 {
+// 		return fmt.Errorf("Public a is not valid")
+// 	}
+
+// 	if aresult.GCD(nil, nil, srp.ephemeralPublicA, Prime).Cmp(bigIntZero) != 0 {
+// 		return fmt.Errorf("Public a is not valid")
+// 	}
+
+// 	if bresult.Mod(srp.EphemeralPublicB, Prime); bresult.Sign() == 0 {
+// 		return fmt.Errorf("Public b is not valid")
+// 	}
+
+// 	if bresult.GCD(nil, nil, srp.EphemeralPublicB, Prime).Cmp(bigIntZero) != 0 {
+// 		return fmt.Errorf("Public b is not valid")
+// 	}
+
+// 	return nil
+// }
+
+func hexFromBigInt(input *big.Int) string {
+	bytes := input.Bytes()
+	hex := hex.EncodeToString(bytes)
+	lower := strings.ToLower(hex)
+	return strings.TrimLeft(lower, "0")
+}
+
 // Calculates server keys and sets the ... variables
-func (srp *SRP6) generatePrivateKeys() error {
+func (srp *SRP6) generateServerKeys() error {
 	srp.ephemeralPrivateB.SetBytes(cryptography.GetNonce())
+
+	if srp.ephemeralPrivateB.Cmp(bigIntZero) <= 0 ||
+		multiplier.Cmp(bigIntZero) <= 0 ||
+		srp.verifier.Cmp(bigIntZero) <= 0 ||
+		Prime.Cmp(bigIntZero) <= 0 ||
+		Generator.Cmp(bigIntZero) <= 0 {
+		return fmt.Errorf("Dont know enough")
+	}
 
 	// Calculating public b
 	term1 := &big.Int{}
@@ -125,13 +181,14 @@ func (srp *SRP6) generatePrivateKeys() error {
 	term1.Mod(term1, Prime)
 	term2.Exp(Generator, srp.ephemeralPrivateB, Prime)
 	srp.EphemeralPublicB.Add(term1, term2)
+	srp.EphemeralPublicB.Mod(srp.EphemeralPublicB, Prime)
 
 	if srp.salt.Cmp(bigIntZero) <= 0 ||
 		srp.verifier.Cmp(bigIntZero) <= 0 ||
 		srp.ephemeralPrivateB.Cmp(bigIntZero) <= 0 ||
 		srp.EphemeralPublicB.Cmp(bigIntZero) <= 0 {
-		fmt.Printf("Error in setting SRP values.\nSalt: %v\nVerifier: %v\nEphemeral Public B: %v\n", srp.salt, srp.verifier, srp.EphemeralPublicB)
-		return errors.New("Error in setting SRP values")
+
+		return fmt.Errorf("Error in setting SRP values.\nSalt: %v\nVerifier: %v\nEphemeral Public B: %v\n", srp.salt, srp.verifier, srp.EphemeralPublicB)
 	}
 	return nil
 }
