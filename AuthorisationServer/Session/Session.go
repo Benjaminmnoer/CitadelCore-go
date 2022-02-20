@@ -69,27 +69,13 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, bool) 
 		logonchallenge := model.LogonChallenge{}
 		convertData(data, &logonchallenge)
 
-		// fmt.Printf("Gamename: %s\n", logonchallenge.Gamename)
-		// fmt.Printf("Accountname: %s\n", logonchallenge.Accountname)
-
 		response := Handlers.HandleLogonChallenge(logonchallenge, repository, srp)
-
-		fmt.Printf("SRP pointer returned: %p\n", srp)
-
-		// fmt.Println("Response")
-		// res2p, _ := json.Marshal(response)
-		// fmt.Println(string(res2p))
-
-		// fmt.Println("SRP")
-		// srp2p, _ := json.Marshal(srp)
-		// fmt.Println(string(srp2p))
 
 		return response, false // Expect more
 	case model.AuthLogonProof:
 		fmt.Println("AuthlogonProof registered")
 		logonproof := model.LogonProof{}
 		convertData(data, &logonproof)
-		fmt.Printf("SRP pointer returned: %p\n", srp)
 
 		response := Handlers.HandleLogonProof(logonproof, srp)
 		return response, false // Expect realmlist command after proof.

@@ -2,7 +2,6 @@ package SRP
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 )
@@ -33,10 +32,10 @@ type SRP6 struct {
 func InitializaSRP() {
 	res, err := hex.DecodeString("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7")
 
-	// Apparently should be reversed?
-	for i, j := 0, len(res)-1; i < j; i, j = i+1, j-1 {
-		res[i], res[j] = res[j], res[i]
-	}
+	// Apparently should be reversed? Apparently not?
+	// for i, j := 0, len(res)-1; i < j; i, j = i+1, j-1 {
+	// 	res[i], res[j] = res[j], res[i]
+	// }
 
 	if err != nil {
 		fmt.Printf("Error initalizing SRP, %s\n", err)
@@ -73,6 +72,9 @@ func NewSrp() *SRP6 {
 func (srp *SRP6) StartSRP(name string, s []byte, v []byte) error {
 	srp.Username = name
 	srp.salt.SetBytes(s)
+	for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
+		v[i], v[j] = v[j], v[i]
+	}
 	srp.verifier.SetBytes(v)
 
 	if srp.salt.Cmp(bigIntZero) <= 0 || srp.verifier.Cmp(bigIntZero) <= 0 {
@@ -95,15 +97,10 @@ func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 	srp.m1.SetBytes(m1)
 
 	if srp.ephemeralPublicA.Cmp(bigIntZero) <= 0 || srp.m1.Cmp(bigIntZero) <= 0 {
-		return errors.New("srp: Error setting proof values")
+		return fmt.Errorf("srp: Error setting proof values.\nA: %s\nM1: %s\n", hex.EncodeToString(ephemeralPublicA), hex.EncodeToString(m1))
 	}
 
-	err := srp.isPublicValid()
-	if err != nil {
-		return err
-	}
-
-	err = srp.calculateU()
+	err := srp.calculateU()
 	if err != nil {
 		return err
 	}
@@ -113,12 +110,12 @@ func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 		return err
 	}
 
-	err = srp.verifyClientProof()
+	err = srp.generateServerKeys()
 	if err != nil {
 		return err
 	}
 
-	err = srp.createServerProof()
+	// err = srp.verifyClientProof()
 	// srp.M2.SetBytes(Cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.m1.Bytes(), srp.sessionKey.Bytes()))
 
 	srp.printSRP()
