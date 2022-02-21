@@ -32,17 +32,13 @@ type SRP6 struct {
 func InitializaSRP() {
 	res, err := hex.DecodeString("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7")
 
-	// Apparently should be reversed? Apparently not?
-	// for i, j := 0, len(res)-1; i < j; i, j = i+1, j-1 {
-	// 	res[i], res[j] = res[j], res[i]
-	// }
-
 	if err != nil {
 		fmt.Printf("Error initalizing SRP, %s\n", err)
 		return
 	}
 
 	Prime = Prime.SetBytes(res)
+	// setLittleEndian(Prime, res)
 }
 
 // Returns server SRP constants.
@@ -71,10 +67,9 @@ func NewSrp() *SRP6 {
 // Starts a SRP session for a single user.
 func (srp *SRP6) StartSRP(name string, s []byte, v []byte) error {
 	srp.Username = name
+	// setLittleEndian(srp.salt, s)
+	// setLittleEndian(srp.verifier, v)
 	srp.salt.SetBytes(s)
-	for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
-		v[i], v[j] = v[j], v[i]
-	}
 	srp.verifier.SetBytes(v)
 
 	if srp.salt.Cmp(bigIntZero) <= 0 || srp.verifier.Cmp(bigIntZero) <= 0 {

@@ -2,6 +2,7 @@ package SRP
 
 import (
 	"CitadelCore/AuthorisationServer/Cryptography"
+	"crypto/sha1"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -39,13 +40,14 @@ func hexFromBigInt(input *big.Int) string {
 	bytes := input.Bytes()
 	hex := hex.EncodeToString(bytes)
 	lower := strings.ToUpper(hex)
-	// return strings.TrimLeft(lower, "0")
 	return lower
+	// return strings.TrimLeft(lower, "0")
 }
 
 // Calculates server keys and sets the ... variables
 func (srp *SRP6) generateServerKeys() error {
-	privateb, _ := hex.DecodeString("254C5F31A0C7622F4D56FAB1B0CB137DA72604717EC72307240BADABCA5EDA81")
+	privateb, _ := hex.DecodeString("469E8A23A75A0C3C26D9E7BFB8CBAA8B8654C3DA1C24111D8B24989AB6984021")
+	// setLittleEndian(srp.ephemeralPrivateB, privateb)
 	srp.ephemeralPrivateB.SetBytes(privateb)
 	// srp.ephemeralPrivateB.SetBytes(Cryptography.GetNonce())
 
@@ -60,16 +62,13 @@ func (srp *SRP6) generateServerKeys() error {
 	// Calculating public b
 	term1 := &big.Int{}
 	term2 := &big.Int{}
-	term1.Mul(big.NewInt(3), srp.verifier)
+	term1.Mul(multiplier, srp.verifier)
 	// term1.Mod(term1, Prime)
-	term2.Exp(big.NewInt(7), srp.ephemeralPrivateB, Prime)
+	term2.Exp(Generator, srp.ephemeralPrivateB, Prime)
 	srp.EphemeralPublicB.Add(term1, term2)
 	srp.EphemeralPublicB.Mod(srp.EphemeralPublicB, Prime)
-	rev := srp.EphemeralPublicB.Bytes()
-	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
-		rev[i], rev[j] = rev[j], rev[i]
-	}
-	srp.EphemeralPublicB.SetBytes(rev)
+	temp := srp.EphemeralPublicB.Bytes()
+	srp.EphemeralPublicB.SetBytes(temp)
 
 	if srp.salt.Cmp(bigIntZero) <= 0 ||
 		srp.verifier.Cmp(bigIntZero) <= 0 ||
@@ -117,36 +116,18 @@ func (srp *SRP6) verifyClientProof() error {
 }
 
 func (srp *SRP6) calculateU() error {
-	// temp := &big.Int{}
-	// temp.Add(srp.ephemeralPublicA, srp.EphemeralPublicB)
-	// abytes := srp.ephemeralPublicA.Bytes()
-	// for i, j := 0, len(abytes)-1; i < j; i, j = i+1, j-1 {
-	// 	abytes[i], abytes[j] = abytes[j], abytes[i]
-	// }
-	// bbytes := srp.EphemeralPublicB.Bytes()
-	// for i, j := 0, len(bbytes)-1; i < j; i, j = i+1, j-1 {
-	// 	bbytes[i], bbytes[j] = bbytes[j], bbytes[i]
-	// }
-	// publica := strings.ToUpper(hex.EncodeToString(abytes))
-	// publicb := strings.ToUpper(hex.EncodeToString(bbytes))
-	publica := hexFromBigInt(srp.ephemeralPublicA)
-	publicb := hexFromBigInt(srp.EphemeralPublicB)
-	fmt.Printf("Public A: %s\nPublic B: %s\n", publica, publicb)
-
 	// srp.u.SetBytes(Cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.EphemeralPublicB.Bytes()))
-	temp := []byte(fmt.Sprintf("%s%s", publica, publicb))
-	// for i, j := 0, len(temp)-1; i < j; i, j = i+1, j-1 {
-	// 	temp[i], temp[j] = temp[j], temp[i]
-	// }
-	hash := Cryptography.Sha1Bytes(temp)
-	// for i, j := 0, len(hash)-1; i < j; i, j = i+1, j-1 {
-	// 	hash[i], hash[j] = hash[j], hash[i]
-	// }
-
-	srp.u.SetBytes(hash)
-	// h := sha1.New()
-	// h.Write([]byte(fmt.Sprintf("%s%s", publica, publicb)))
-	// srp.u.SetBytes(Cryptography.Sha1Bytes(temp.Bytes()))
+	// publica := strings.ToLower(hexFromBigInt(srp.ephemeralPublicA))
+	// publicb := strings.ToLower(hexFromBigInt(srp.EphemeralPublicB))
+	tempa := srp.ephemeralPublicA.Bytes()
+	tempb := srp.EphemeralPublicB.Bytes()
+	hasher := sha1.New()
+	hasher.Write(append(tempa, tempb...))
+	// hasher.Write([]byte(fmt.Sprintf("%s%s", publica, publicb)))
+	// hasher.Write(srp.ephemeralPublicA.Bytes())
+	// hasher.Write(srp.EphemeralPublicB.Bytes())
+	res := hasher.Sum(nil)
+	srp.u.SetBytes(res)
 
 	if srp.u.Cmp(bigIntZero) <= 0 {
 		return errors.New("srp: Error setting u value")
@@ -229,4 +210,19 @@ func (srp *SRP6) printSRP() {
 	fmt.Printf("M1: %s\n", hexFromBigInt(srp.m1))
 	fmt.Printf("M2: %s\n", hexFromBigInt(srp.M2))
 	fmt.Println()
+}
+
+func getLittleEndian(b *big.Int) []byte {
+	temp := b.Bytes()
+	for i, j := 0, len(temp)-1; i < j; i, j = i+1, j-1 {
+		temp[i], temp[j] = temp[j], temp[i]
+	}
+	return temp
+}
+
+func setLittleEndian(b *big.Int, value []byte) {
+	for i, j := 0, len(value)-1; i < j; i, j = i+1, j-1 {
+		value[i], value[j] = value[j], value[i]
+	}
+	b.SetBytes(value)
 }
