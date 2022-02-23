@@ -1,6 +1,7 @@
 package SRP
 
 import (
+	"CitadelCore/AuthorisationServer/Cryptography"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -16,17 +17,17 @@ var (
 
 type SRP6 struct {
 	ephemeralPublicA  *big.Int
-	ephemeralPrivateB *big.Int
+	EphemeralPrivateB *big.Int
 	EphemeralPublicB  *big.Int // Must be public or create getter
-	preSessionKey     *big.Int
-	sessionKey        *big.Int
-	u                 *big.Int
-	verifier          *big.Int
-	salt              *big.Int
-	m1                *big.Int
+	PreSessionKey     *big.Int
+	SessionKey        *big.Int
+	U                 *big.Int
+	Verifier          *big.Int
+	Salt              *big.Int
+	M1                *big.Int
 	M2                *big.Int // Must be public or create getter
 	Username          string
-	badstate          bool
+	Badstate          bool
 }
 
 func InitializaSRP() {
@@ -38,41 +39,33 @@ func InitializaSRP() {
 	}
 
 	Prime = Prime.SetBytes(res)
-	// setLittleEndian(Prime, res)
-}
-
-// Returns server SRP constants.
-func GetConstants() (*big.Int, *big.Int) {
-	return Generator, Prime
 }
 
 // Returns pointer to empty srp. Needs to call StartSRP to initialize session.
 func NewSrp() *SRP6 {
 	return &SRP6{
 		ephemeralPublicA:  big.NewInt(0),
-		ephemeralPrivateB: big.NewInt(0),
+		EphemeralPrivateB: big.NewInt(0), // Public for testing purposes.
 		EphemeralPublicB:  big.NewInt(0),
-		preSessionKey:     big.NewInt(0),
-		sessionKey:        big.NewInt(0),
-		u:                 big.NewInt(0),
-		verifier:          big.NewInt(0),
-		salt:              big.NewInt(0),
-		m1:                big.NewInt(0),
+		PreSessionKey:     big.NewInt(0),
+		SessionKey:        big.NewInt(0),
+		U:                 big.NewInt(0),
+		Verifier:          big.NewInt(0),
+		Salt:              big.NewInt(0),
+		M1:                big.NewInt(0),
 		M2:                big.NewInt(0),
 		Username:          "",
-		badstate:          false,
+		Badstate:          false,
 	}
 }
 
 // Starts a SRP session for a single user.
 func (srp *SRP6) StartSRP(name string, s []byte, v []byte) error {
 	srp.Username = name
-	// setLittleEndian(srp.salt, s)
-	// setLittleEndian(srp.verifier, v)
-	srp.salt.SetBytes(s)
-	srp.verifier.SetBytes(v)
+	srp.Salt.SetBytes(s)
+	srp.Verifier.SetBytes(v)
 
-	if srp.salt.Cmp(bigIntZero) <= 0 || srp.verifier.Cmp(bigIntZero) <= 0 {
+	if srp.Salt.Cmp(bigIntZero) <= 0 || srp.Verifier.Cmp(bigIntZero) <= 0 {
 		return fmt.Errorf("Error setting salt or verifier")
 	}
 
@@ -82,16 +75,14 @@ func (srp *SRP6) StartSRP(name string, s []byte, v []byte) error {
 		return error
 	}
 
-	srp.printSRP()
-
 	return nil
 }
 
 func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 	srp.ephemeralPublicA.SetBytes(ephemeralPublicA)
-	srp.m1.SetBytes(m1)
+	srp.M1.SetBytes(m1)
 
-	if srp.ephemeralPublicA.Cmp(bigIntZero) <= 0 || srp.m1.Cmp(bigIntZero) <= 0 {
+	if srp.ephemeralPublicA.Cmp(bigIntZero) <= 0 || srp.M1.Cmp(bigIntZero) <= 0 {
 		return fmt.Errorf("srp: Error setting proof values.\nA: %s\nM1: %s\n", hex.EncodeToString(ephemeralPublicA), hex.EncodeToString(m1))
 	}
 
@@ -105,13 +96,8 @@ func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 		return err
 	}
 
-	err = srp.generateServerKeys()
-	if err != nil {
-		return err
-	}
-
-	// err = srp.verifyClientProof()
-	// srp.M2.SetBytes(Cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.m1.Bytes(), srp.sessionKey.Bytes()))
+	err = srp.verifyClientProof()
+	srp.M2.SetBytes(Cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.M1.Bytes(), srp.SessionKey.Bytes()))
 
 	srp.printSRP()
 
