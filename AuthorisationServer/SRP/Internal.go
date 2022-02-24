@@ -18,7 +18,7 @@ func hexFromBigInt(input *big.Int) string {
 
 // Calculates server keys and sets the ... variables
 func (srp *SRP6) generateServerKeys() error {
-	privateb, _ := hex.DecodeString("E4A0083623D5C539399A62D1B81E2162BEF30771E3FF6E7342CB1F9A62CF1467")
+	privateb, _ := hex.DecodeString("5780F2F000EE71219B4CAD40F268A6AAFB570164AB97CF3AC90725D8C4DD85D0")
 	srp.EphemeralPrivateB.SetBytes(privateb)
 	// srp.ephemeralPrivateB.SetBytes(Cryptography.GetNonce())
 
@@ -85,6 +85,10 @@ func (srp *SRP6) verifyClientProof() error {
 	for i := 0; i < 20; i++ {
 		dest[i] = nHash[i] ^ gHash[i]
 	}
+	for i, j := 0, len(dest)-1; i < j; i, j = i+1, j-1 {
+		dest[i], dest[j] = dest[j], dest[i]
+	}
+
 	xor := &big.Int{}
 	xor.SetBytes(dest)
 	fmt.Printf("xor:\nHex %s\nDec %s\n", hexFromBigInt(xor), xor.Text(10))
@@ -93,11 +97,18 @@ func (srp *SRP6) verifyClientProof() error {
 	// if xorlength != Cryptography.Sha1Size() {
 	// 	return fmt.Errorf("XOR had %d bytes instead of %d", xorlength, Cryptography.Sha1Size())
 	// }
-	groupHash := Cryptography.Sha1Bytes(dest)
+	// groupHash := Cryptography.Sha1Bytes(dest)
+	// for i, j := 0, len(groupHash)-1; i < j; i, j = i+1, j-1 {
+	// 	groupHash[i], groupHash[j] = groupHash[j], groupHash[i]
+	// }
 
 	uHash := Cryptography.Sha1Bytes([]byte(srp.Username))
+	utemp := &big.Int{}
+	utemp.SetBytes(uHash)
+	fmt.Printf("Usernamehash:\nHex %s\nDec %s\n", hexFromBigInt(utemp), utemp.Text(10))
 
-	m1res := Cryptography.Sha1Multiplebytes(groupHash, uHash, srp.Salt.Bytes(), srp.ephemeralPublicA.Bytes(), srp.EphemeralPublicB.Bytes(), srp.SessionKey.Bytes())
+	// m1res := Cryptography.Sha1Multiplebytes(groupHash, uHash, srp.Salt.Bytes(), srp.ephemeralPublicA.Bytes(), srp.EphemeralPublicB.Bytes(), srp.SessionKey.Bytes())
+	m1res := Cryptography.Sha1Multiplebytes(dest, uHash, getLittleEndian(srp.Salt), getLittleEndian(srp.ephemeralPublicA), getLittleEndian(srp.EphemeralPublicB), getLittleEndian(srp.SessionKey))
 	temp := &big.Int{}
 	temp.SetBytes(m1res)
 	fmt.Printf("Calculated m1:\nHex: %s\nDec: %s\n", hexFromBigInt(temp), temp.Text(10))
@@ -112,11 +123,8 @@ func (srp *SRP6) verifyClientProof() error {
 }
 
 func (srp *SRP6) calculateU() error {
-	tempa := &big.Int{}
-	tempb := &big.Int{}
-	setReverseEndian(tempa, srp.ephemeralPublicA.Bytes())
-	setReverseEndian(tempb, srp.EphemeralPublicB.Bytes())
-	setReverseEndian(srp.U, Cryptography.Sha1Multiplebytes(tempa.Bytes(), tempb.Bytes()))
+	keyhash := Cryptography.Sha1Multiplebytes(getLittleEndian(srp.ephemeralPublicA), getLittleEndian(srp.EphemeralPublicB))
+	setReverseEndian(srp.U, keyhash)
 
 	if srp.U.Cmp(bigIntZero) <= 0 {
 		return errors.New("srp: Error setting u value")
