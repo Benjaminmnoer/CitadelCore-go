@@ -65,13 +65,13 @@ func (srp *SRP6) StartSRP(name string, s []byte, v []byte) error {
 	srp.Verifier.SetBytes(v)
 
 	if srp.Salt.Cmp(bigIntZero) <= 0 || srp.Verifier.Cmp(bigIntZero) <= 0 {
-		return fmt.Errorf("Error setting salt or verifier")
+		return fmt.Errorf("SRP: Error setting salt or verifier.")
 	}
 
-	error := srp.generateServerKeys()
+	err := srp.generateServerKeys()
 
-	if error != nil {
-		return error
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -82,7 +82,7 @@ func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 	srp.M1.SetBytes(m1)
 
 	if srp.ephemeralPublicA.Cmp(bigIntZero) <= 0 || srp.M1.Cmp(bigIntZero) <= 0 {
-		return fmt.Errorf("srp: Error setting proof values.\nA: %s\nM1: %s\n", hex.EncodeToString(ephemeralPublicA), hex.EncodeToString(m1))
+		return fmt.Errorf("SRP: Error setting logon proof values.\nA: %s\nM1: %s\n", hex.EncodeToString(ephemeralPublicA), hex.EncodeToString(m1))
 	}
 
 	err := srp.calculateU()

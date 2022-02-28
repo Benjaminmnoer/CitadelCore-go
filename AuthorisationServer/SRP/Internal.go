@@ -18,9 +18,9 @@ func hexFromBigInt(input *big.Int) string {
 
 // Calculates server keys and sets the ... variables
 func (srp *SRP6) generateServerKeys() error {
-	privateb, _ := hex.DecodeString("F1568D79CF6E35A3A44791A12DFC9A09B2FD1B0C90948D29F747E63991E44919")
-	srp.EphemeralPrivateB.SetBytes(privateb)
-	// srp.ephemeralPrivateB.SetBytes(Cryptography.GetNonce())
+	if srp.EphemeralPrivateB.Cmp(bigIntZero) == 0 {
+		srp.EphemeralPrivateB.SetBytes(Cryptography.GetNonce())
+	}
 
 	if srp.EphemeralPrivateB.Cmp(bigIntZero) <= 0 ||
 		multiplier.Cmp(bigIntZero) <= 0 ||
@@ -50,7 +50,7 @@ func (srp *SRP6) generateServerKeys() error {
 
 // Constructs the proof that the server knows the key. Sets the M2 variable
 func (srp *SRP6) createServerProof() {
-	res := Cryptography.Sha1Multiplebytes(getLittleEndian(srp.ephemeralPublicA), getLittleEndian(srp.M1), getLittleEndian(srp.PreSessionKey))
+	res := Cryptography.Sha1Multiplebytes(getLittleEndian(srp.ephemeralPublicA), getLittleEndian(srp.M1), getLittleEndian(srp.SessionKey))
 	setReverseEndian(srp.M2, res)
 }
 
@@ -121,16 +121,13 @@ func (srp *SRP6) calculateSessionKey() error {
 	temp := big.NewInt(0)
 
 	temp.Exp(srp.Verifier, srp.U, Prime)
-	fmt.Printf("v ^ u mod N:\nHex %s\nDec %s\n", hexFromBigInt(temp), temp.Text(10))
 	temp.Mul(srp.ephemeralPublicA, temp)
-	fmt.Printf("a * base:\nHex %s\nDec %s\n", hexFromBigInt(temp), temp.Text(10))
 	temp.Exp(temp, srp.EphemeralPrivateB, Prime)
-	fmt.Printf("base ^ b mod N:\nHex %s\nDec %s\n", hexFromBigInt(temp), temp.Text(10))
 	srp.PreSessionKey.Exp(srp.Verifier, srp.U, Prime)
 	srp.PreSessionKey.Mul(srp.ephemeralPublicA, srp.PreSessionKey)
 	srp.PreSessionKey.Exp(srp.PreSessionKey, srp.EphemeralPrivateB, Prime)
 
-	// Shamelessly stolen directly from trinitycore
+	// Shamelessly stolen directly from trinitycore.
 	sbytes := srp.PreSessionKey.Bytes()
 	for i2, j := 0, len(sbytes)-1; i2 < j; i2, j = i2+1, j-1 {
 		sbytes[i2], sbytes[j] = sbytes[j], sbytes[i2]
@@ -142,12 +139,6 @@ func (srp *SRP6) calculateSessionKey() error {
 		buffer0[i] = sbytes[2*i+0]
 		buffer1[i] = sbytes[2*i+1]
 	}
-	temp0 := &big.Int{}
-	temp1 := &big.Int{}
-	temp0.SetBytes(buffer0)
-	temp1.SetBytes(buffer1)
-	fmt.Printf("Buffer0: %s\n", temp0.Text(10))
-	fmt.Printf("Buffer1: %s\n", temp1.Text(10))
 
 	p := 0
 	for ; p < 32; p++ {
@@ -159,15 +150,9 @@ func (srp *SRP6) calculateSessionKey() error {
 		p++
 	}
 	p /= 2
-	fmt.Printf("Offset: %d\n", p)
 
 	hash0 := Cryptography.Sha1Bytes(buffer0[p:])
 	hash1 := Cryptography.Sha1Bytes(buffer1[p:])
-
-	temp0.SetBytes(hash0)
-	temp1.SetBytes(hash1)
-	fmt.Printf("Buffer0: %s\n", temp0.Text(10))
-	fmt.Printf("Buffer1: %s\n", temp1.Text(10))
 
 	res := make([]byte, 40)
 

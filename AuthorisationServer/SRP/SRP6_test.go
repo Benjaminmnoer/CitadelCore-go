@@ -16,10 +16,12 @@ func TestSrpFunctionality(t *testing.T) {
 	}
 
 	verifier, _ := hex.DecodeString("2C9B1534B3E0D354EB682BF203E76D67BE621399F4DBFE8054C84E3D2977398E")
+	privateb, _ := hex.DecodeString("F1568D79CF6E35A3A44791A12DFC9A09B2FD1B0C90948D29F747E63991E44919")
 	ephemeralpublicA, _ := hex.DecodeString("80A902907937B749FF11FD6DA01FFA1446388E3DFC79C2FCFE6BB033D5CC13C1")
 	m1, _ := hex.DecodeString(strings.ToUpper("E930033E74341E5B73B27993C092B906820FDF2F"))
 
 	srp := SRP.NewSrp()
+	srp.EphemeralPrivateB.SetBytes(privateb)
 	srp.StartSRP(name, salt, verifier)
 
 	ephemeralpublicB := strings.ToUpper(hex.EncodeToString(srp.EphemeralPublicB.Bytes()))
@@ -48,8 +50,8 @@ func TestSrpFunctionality(t *testing.T) {
 		t.Fatalf("Wrong session key.\nExpected: %s\nactual: %s\n", "7C4E350B088D742221DECAD55E28582A9AA3752F32765DC8AB3467C92B3A63008F519F48A59B9862", sessionkey)
 	}
 
-	m2 := strings.ToLower(hex.EncodeToString(srp.M2.Bytes()))
-	if u != "CEC637390B518A728A9264AE52A6144F58B5E383" {
+	m2 := strings.ToUpper(hex.EncodeToString(srp.M2.Bytes()))
+	if m2 != "CEC637390B518A728A9264AE52A6144F58B5E383" {
 		t.Fatalf("Wrong m2.\nExpected: %s\nactual: %s\n", "CEC637390B518A728A9264AE52A6144F58B5E383", m2)
 	}
 }
