@@ -1,7 +1,6 @@
 package SRP
 
 import (
-	"CitadelCore/AuthorisationServer/Cryptography"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -97,9 +96,11 @@ func (srp SRP6) VerifyProof(ephemeralPublicA []byte, m1 []byte) error {
 	}
 
 	err = srp.verifyClientProof()
-	srp.M2.SetBytes(Cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.M1.Bytes(), srp.SessionKey.Bytes()))
+	if err != nil {
+		return err
+	}
 
-	srp.printSRP()
+	srp.createServerProof()
 
-	return err
+	return nil
 }

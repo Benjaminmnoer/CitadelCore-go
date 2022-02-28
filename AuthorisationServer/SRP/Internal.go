@@ -18,7 +18,7 @@ func hexFromBigInt(input *big.Int) string {
 
 // Calculates server keys and sets the ... variables
 func (srp *SRP6) generateServerKeys() error {
-	privateb, _ := hex.DecodeString("5780F2F000EE71219B4CAD40F268A6AAFB570164AB97CF3AC90725D8C4DD85D0")
+	privateb, _ := hex.DecodeString("F1568D79CF6E35A3A44791A12DFC9A09B2FD1B0C90948D29F747E63991E44919")
 	srp.EphemeralPrivateB.SetBytes(privateb)
 	// srp.ephemeralPrivateB.SetBytes(Cryptography.GetNonce())
 
@@ -49,9 +49,9 @@ func (srp *SRP6) generateServerKeys() error {
 }
 
 // Constructs the proof that the server knows the key. Sets the M2 variable
-func (srp *SRP6) createServerProof() error {
-	Cryptography.Sha1Multiplebytes(srp.ephemeralPublicA.Bytes(), srp.M1.Bytes(), srp.PreSessionKey.Bytes())
-	return errors.New("Not implemented")
+func (srp *SRP6) createServerProof() {
+	res := Cryptography.Sha1Multiplebytes(getLittleEndian(srp.ephemeralPublicA), getLittleEndian(srp.M1), getLittleEndian(srp.PreSessionKey))
+	setReverseEndian(srp.M2, res)
 }
 
 // Verifies the received client proof of key knowledge. Returns error if it does not verify.
@@ -79,8 +79,6 @@ func (srp *SRP6) verifyClientProof() error {
 	gtemp := &big.Int{}
 	ntemp.SetBytes(nHash)
 	gtemp.SetBytes(gHash)
-	fmt.Printf("NHash:\nHex %s\nDec %s\n", hexFromBigInt(ntemp), ntemp.Text(10))
-	fmt.Printf("gHash:\nHex %s\nDec %s\n", hexFromBigInt(gtemp), gtemp.Text(10))
 	dest := make([]byte, 20)
 	for i := 0; i < 20; i++ {
 		dest[i] = nHash[i] ^ gHash[i]
@@ -91,27 +89,14 @@ func (srp *SRP6) verifyClientProof() error {
 
 	xor := &big.Int{}
 	xor.SetBytes(dest)
-	fmt.Printf("xor:\nHex %s\nDec %s\n", hexFromBigInt(xor), xor.Text(10))
-	// xor := make([]byte, Cryptography.Sha1Size())
-	// xorlength := safeXORBytes(xor, nHash[:], gHash[:])
-	// if xorlength != Cryptography.Sha1Size() {
-	// 	return fmt.Errorf("XOR had %d bytes instead of %d", xorlength, Cryptography.Sha1Size())
-	// }
-	// groupHash := Cryptography.Sha1Bytes(dest)
-	// for i, j := 0, len(groupHash)-1; i < j; i, j = i+1, j-1 {
-	// 	groupHash[i], groupHash[j] = groupHash[j], groupHash[i]
-	// }
 
 	uHash := Cryptography.Sha1Bytes([]byte(srp.Username))
 	utemp := &big.Int{}
 	utemp.SetBytes(uHash)
-	fmt.Printf("Usernamehash:\nHex %s\nDec %s\n", hexFromBigInt(utemp), utemp.Text(10))
 
-	// m1res := Cryptography.Sha1Multiplebytes(groupHash, uHash, srp.Salt.Bytes(), srp.ephemeralPublicA.Bytes(), srp.EphemeralPublicB.Bytes(), srp.SessionKey.Bytes())
 	m1res := Cryptography.Sha1Multiplebytes(dest, uHash, getLittleEndian(srp.Salt), getLittleEndian(srp.ephemeralPublicA), getLittleEndian(srp.EphemeralPublicB), getLittleEndian(srp.SessionKey))
 	temp := &big.Int{}
-	temp.SetBytes(m1res)
-	fmt.Printf("Calculated m1:\nHex: %s\nDec: %s\n", hexFromBigInt(temp), temp.Text(10))
+	setReverseEndian(temp, m1res)
 
 	for i, v := range srp.M1.Bytes() {
 		if v != m1res[i] {
