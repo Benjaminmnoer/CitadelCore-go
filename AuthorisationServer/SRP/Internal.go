@@ -181,7 +181,7 @@ func safeXORBytes(dst, a, b []byte) int {
 	return n
 }
 
-func (srp *SRP6) printSRP() {
+func (srp *SRP6) PrintSRP() {
 	fmt.Printf("SRP session for %s\n", srp.Username)
 	fmt.Printf("Prime:\nHex %s\nDec %s\n", hexFromBigInt(Prime), Prime.Text(10))
 	fmt.Printf("Multiplier:\nHex %s\nDec %s\n", hexFromBigInt(multiplier), multiplier.Text(10))

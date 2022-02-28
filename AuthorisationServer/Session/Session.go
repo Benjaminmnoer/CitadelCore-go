@@ -77,7 +77,14 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, bool) 
 		logonproof := model.LogonProof{}
 		convertData(data, &logonproof)
 
-		response := Handlers.HandleLogonProof(logonproof, srp)
+		response, err := Handlers.HandleLogonProof(logonproof, srp)
+		srp.PrintSRP()
+
+		if err != nil {
+			fmt.Printf("Error in handling logon proof: %e\n", err)
+			return nil, true
+		}
+
 		return response, false // Expect realmlist command after proof.
 	case model.AuthReconnectChallenge:
 		fmt.Println("AuthReconnectChallenge registered")
