@@ -7,5 +7,5 @@ import (
 
 func Start() {
 	fmt.Println("Starting authserver...")
-	Session.Test()
+	Session.StartServer()
 }

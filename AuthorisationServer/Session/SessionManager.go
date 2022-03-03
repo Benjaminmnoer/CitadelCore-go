@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-func Test() {
+func StartServer() {
 	fmt.Println("Session manager started")
 	srp.InitializaSRP()
 

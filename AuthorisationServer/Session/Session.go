@@ -77,7 +77,6 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, bool) 
 		convertData(data, &logonproof)
 
 		response, err := Handlers.HandleLogonProof(logonproof, srp)
-		srp.PrintSRP()
 
 		if err != nil {
 			fmt.Printf("Error in handling logon proof: %e\n", err)

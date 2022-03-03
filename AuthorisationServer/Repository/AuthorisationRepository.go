@@ -15,6 +15,7 @@ var (
 
 const (
 	_ACCOUNTINFO_QUERY = "SELECT username, salt, verifier FROM account WHERE username = ?;"
+	_REALMLIST_QUERY   = "SELECT id, name, address, localAddress, localSubnetMask, port, icon, flag, timezone, allowedSecurityLevel, population, gamebuild FROM realmlist WHERE flag <> 3 ORDER BY name;"
 )
 
 type AuthorisationRepository struct {
@@ -22,7 +23,6 @@ type AuthorisationRepository struct {
 }
 
 func (authRepo AuthorisationRepository) GetAccountInformation(accountname string) model.AccountInformation {
-	fmt.Printf("Querying for name: %s\n", accountname)
 	query := _ACCOUNTINFO_QUERY // strings.Replace(_ACCOUNTINFO_QUERY, "?", accountname, 1)
 	fmt.Println(query)
 	accountinfo := model.AccountInformation{}
@@ -38,6 +38,10 @@ func (authRepo AuthorisationRepository) GetAccountInformation(accountname string
 	}
 
 	return accountinfo
+}
+
+func (authRepo AuthorisationRepository) GetRealms() {
+
 }
 
 func InitializeAuthorisationRepository() AuthorisationRepository {
