@@ -23,10 +23,10 @@ func HandleSession(conn net.Conn) {
 	for !endsession {
 		fmt.Println("Reading data")
 		buffer := make([]byte, 256)
-		size, error := connection.Read(&buffer)
+		size, err := connection.Read(&buffer)
 
-		if error != nil {
-			fmt.Printf("Error in reading message! %s\n", error)
+		if err != nil {
+			fmt.Printf("Error in reading message! %s\n", err)
 			return
 		}
 
@@ -35,17 +35,17 @@ func HandleSession(conn net.Conn) {
 		response, done := delegateCommand(buffer[0], buffer, srp)
 		endsession = done
 		output := new(bytes.Buffer)
-		error = binary.Write(output, binary.BigEndian, response)
+		err = binary.Write(output, binary.LittleEndian, response)
 
-		if error != nil {
-			fmt.Printf("Error in serializing response! %s\n", error)
+		if err != nil {
+			fmt.Printf("Error in serializing response! %s\n", err)
 			return
 		}
 
-		size, error = connection.Write(output.Bytes())
+		size, err = connection.Write(output.Bytes())
 
-		if error != nil {
-			fmt.Printf("Error in writing response! %s\n", error)
+		if err != nil {
+			fmt.Printf("Error in writing response! %s\n", err)
 			return
 		}
 
@@ -54,7 +54,6 @@ func HandleSession(conn net.Conn) {
 		if done {
 			// TODO: Move logic elsewhere
 			connection.Connection.Close()
-			// session.done = true
 		}
 	}
 

@@ -19,7 +19,9 @@ func hexFromBigInt(input *big.Int) string {
 // Calculates server keys and sets the ... variables
 func (srp *SRP6) generateServerKeys() error {
 	if srp.EphemeralPrivateB.Cmp(bigIntZero) == 0 {
-		srp.EphemeralPrivateB.SetBytes(Cryptography.GetNonce())
+		// srp.EphemeralPrivateB.SetBytes(Cryptography.GetNonce())
+		privateb, _ := hex.DecodeString("F1568D79CF6E35A3A44791A12DFC9A09B2FD1B0C90948D29F747E63991E44919")
+		srp.EphemeralPrivateB.SetBytes(privateb)
 	}
 
 	if srp.EphemeralPrivateB.Cmp(bigIntZero) <= 0 ||
@@ -97,6 +99,7 @@ func (srp *SRP6) verifyClientProof() error {
 	m1res := Cryptography.Sha1Multiplebytes(dest, uHash, getLittleEndian(srp.Salt), getLittleEndian(srp.ephemeralPublicA), getLittleEndian(srp.EphemeralPublicB), getLittleEndian(srp.SessionKey))
 	temp := &big.Int{}
 	setReverseEndian(temp, m1res)
+	fmt.Printf("Calculated M1: %s\n", hex.EncodeToString(m1res))
 
 	for i, v := range srp.M1.Bytes() {
 		if v != m1res[i] {

@@ -11,5 +11,5 @@ type LogonChallengeResponse struct {
 	Prime            [32]byte
 	Salt             [32]byte
 	CRC              [16]byte
-	Flags            uint32 // How many?
+	Flags            uint8 // Create byte array?
 }

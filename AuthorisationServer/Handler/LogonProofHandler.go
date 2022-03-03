@@ -29,12 +29,18 @@ func HandleLogonProof(dto Model.LogonProof, srp *SRP.SRP6) (Model.LogonProofResp
 	response.Error = uint8(Model.Success)
 	var m2arr [20]byte
 	copy(m2arr[:], srp.M2.Bytes())
+	for i, j := 0, len(m2arr)-1; i < j; i, j = i+1, j-1 {
+		m2arr[i], m2arr[j] = m2arr[j], m2arr[i]
+	}
 	response.M2 = m2arr
 	response.SurveyId = 0
 	response.LoginFlags = 0
 	var accountflagsarray [4]byte
-	hex, _ := hex.DecodeString("00080000")
+	hex, _ := hex.DecodeString("00800000")
 	copy(accountflagsarray[:], hex)
+	for i, j := 0, len(accountflagsarray)-1; i < j; i, j = i+1, j-1 {
+		accountflagsarray[i], accountflagsarray[j] = accountflagsarray[j], accountflagsarray[i]
+	}
 	response.AccountFlags = accountflagsarray
 
 	return response, nil

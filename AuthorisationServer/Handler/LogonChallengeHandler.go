@@ -26,6 +26,9 @@ func HandleLogonChallenge(dto model.LogonChallenge,
 	response.Status = model.Success
 	var saltarray [32]byte
 	copy(saltarray[:], accountinfo.Salt)
+	for i, j := 0, len(saltarray)-1; i < j; i, j = i+1, j-1 {
+		saltarray[i], saltarray[j] = saltarray[j], saltarray[i]
+	}
 	response.Salt = saltarray
 	response.Flags = 0
 	response.GeneratorSize = 1

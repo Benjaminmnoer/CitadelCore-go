@@ -30,6 +30,12 @@ func (authRepo AuthorisationRepository) GetAccountInformation(accountname string
 	if err != nil {
 		panic(err)
 	}
+	for i, j := 0, len(accountinfo.Verifier)-1; i < j; i, j = i+1, j-1 {
+		accountinfo.Verifier[i], accountinfo.Verifier[j] = accountinfo.Verifier[j], accountinfo.Verifier[i]
+	}
+	for i, j := 0, len(accountinfo.Salt)-1; i < j; i, j = i+1, j-1 {
+		accountinfo.Salt[i], accountinfo.Salt[j] = accountinfo.Salt[j], accountinfo.Salt[i]
+	}
 
 	return accountinfo
 }
