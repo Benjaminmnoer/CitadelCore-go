@@ -47,29 +47,63 @@ func Test(username string) ([]byte, error) {
 	return res, nil
 }
 
-func (connection MysqlDatabaseConnection) ExecuteQuerySingleResult(query string, result interface{}, args ...interface{}) (interface{}, error) {
-	fmt.Printf("Arguments\n")
-	for i, arg := range args {
-		fmt.Printf("Argument: %s, i: %d\n", arg, i)
-	}
-
+func (connection MysqlDatabaseConnection) ExecuteQuery(query string, resultType interface{}) (interface{}, error) {
 	db, err := sql.Open("mysql", connection.config.FormatDSN())
 	if err != nil {
-		fmt.Printf("mysql-db: error opening database connection. Error: %s\n", err)
-		return nil, err
+		return nil, fmt.Errorf("mysql-db: error opening database connection. Error: %s\n", err)
 	}
-	// defer db.Close()
+	defer db.Close()
+
+	rows := db.QueryRow(query)
+
+	err = rows.Scan(resultType)
+	if err != nil {
+		return nil, fmt.Errorf("mysql-db: error reading results. Error: %s\n", err)
+	}
+
+	return resultType, nil
+}
+
+func (connection MysqlDatabaseConnection) ExecuteQuerySingleResult(query string, resultType interface{}, args ...interface{}) (interface{}, error) {
+	db, err := sql.Open("mysql", connection.config.FormatDSN())
+	if err != nil {
+		return nil, fmt.Errorf("mysql-db: error opening database connection. Error: %s\n", err)
+	}
+	defer db.Close()
 
 	rows := db.QueryRow(query, args...)
 
-	fields := Reflection.GetFields(result)
+	fields := Reflection.GetFields(resultType)
 	err = rows.Scan(fields...)
 	if err != nil {
-		fmt.Printf("mysql-db: error reading result. Error: %s\n", err)
-		return nil, err
+		return nil, fmt.Errorf("mysql-db: error reading results. Error: %s\n", err)
 	}
 
-	return Reflection.CreateResultlFromFields(fields, result), nil // createResultlFromFields(fields, result), nil
+	return Reflection.CreateResultFromFields(fields, resultType), nil
+}
+
+func (connection MysqlDatabaseConnection) ExecuteQueryMultipleResults(query string, resultType interface{}, resultSet []interface{}, args ...interface{}) ([]interface{}, error) {
+	db, err := sql.Open("mysql", connection.config.FormatDSN())
+	if err != nil {
+		return nil, fmt.Errorf("mysql-db: error opening database connection. Error: %s\n", err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query(query, args...)
+
+	var index = 0
+	for rows.Next() {
+		fields := Reflection.GetFields(resultType)
+		err = rows.Scan(fields...)
+		if err != nil {
+			return nil, fmt.Errorf("mysql-db: error reading results. Error: %s\n", err)
+		}
+
+		resultSet[index] = Reflection.CreateResultFromFields(fields, resultType)
+		index++
+	}
+
+	return resultSet, nil
 }
 
 func CreateDatabaseConnection(username string, password string, address string, database string) (MysqlDatabaseConnection, error) {

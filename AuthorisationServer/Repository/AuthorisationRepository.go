@@ -1,7 +1,7 @@
 package Repository
 
 import (
-	model "CitadelCore/AuthorisationServer/Model"
+	model "CitadelCore/AuthorisationServer/Repository/Model"
 	connection "CitadelCore/Shared/Database/Mysql"
 	"fmt"
 )
@@ -16,6 +16,7 @@ var (
 const (
 	_ACCOUNTINFO_QUERY = "SELECT username, salt, verifier FROM account WHERE username = ?;"
 	_REALMLIST_QUERY   = "SELECT id, name, address, localAddress, localSubnetMask, port, icon, flag, timezone, allowedSecurityLevel, population, gamebuild FROM realmlist WHERE flag <> 3 ORDER BY name;"
+	_REALMCOUNT_QUERY  = "SELECT count(*) FROM realmlist;"
 )
 
 type AuthorisationRepository struct {
@@ -24,7 +25,6 @@ type AuthorisationRepository struct {
 
 func (authRepo AuthorisationRepository) GetAccountInformation(accountname string) model.AccountInformation {
 	query := _ACCOUNTINFO_QUERY // strings.Replace(_ACCOUNTINFO_QUERY, "?", accountname, 1)
-	fmt.Println(query)
 	accountinfo := model.AccountInformation{}
 	_, err := authRepo.dbconnection.ExecuteQuerySingleResult(query, &accountinfo, accountname)
 	if err != nil {
@@ -40,8 +40,23 @@ func (authRepo AuthorisationRepository) GetAccountInformation(accountname string
 	return accountinfo
 }
 
-func (authRepo AuthorisationRepository) GetRealms() {
+func (authRepo AuthorisationRepository) GetRealms() ([]model.RealmInfo, error) {
+	// counter := 0
 
+	realm := model.RealmInfo{}
+	resultSet := make([]interface{}, 32)
+	_, err := authRepo.dbconnection.ExecuteQueryMultipleResults(_REALMLIST_QUERY, &realm, resultSet)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error executing query: %s\n", err)
+	}
+
+	results := *new([]model.RealmInfo)
+	for i, v := range resultSet {
+		results[i] = v.(model.RealmInfo)
+	}
+
+	return results, nil
 }
 
 func InitializeAuthorisationRepository() AuthorisationRepository {

@@ -39,7 +39,7 @@ func TestCreateResultFromFields(t *testing.T) {
 	fields := []interface{}{&testname, &testvalue, &testbytes}
 
 	sut := &testpointerstruct{}
-	sut = Reflection.CreateResultlFromFields(fields, sut).(*testpointerstruct)
+	sut = Reflection.CreateResultFromFields(fields, sut).(*testpointerstruct)
 
 	if testname != sut.Name {
 		t.Fatalf("Expected %s, got %s\n", testname, sut.Name)

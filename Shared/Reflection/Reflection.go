@@ -23,7 +23,7 @@ func GetFields(object interface{}) []interface{} {
 
 // This expects the input in fields to be pointers
 // TODO: Update to handle conversion between pointers and doublecheck the types?
-func CreateResultlFromFields(fields []interface{}, result interface{}) interface{} {
+func CreateResultFromFields(fields []interface{}, result interface{}) interface{} {
 	value := reflect.ValueOf(result).Elem()
 
 	for i := 0; i < value.NumField(); i++ {

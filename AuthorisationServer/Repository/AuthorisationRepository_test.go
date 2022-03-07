@@ -21,3 +21,14 @@ func TestGetAccountInformation(t *testing.T) {
 		t.Fatalf("Account name did not return as expected. Expected %s, was %s\n", accountname, resacc)
 	}
 }
+
+func TestGetRealm(t *testing.T) {
+	repo := Repository.InitializeAuthorisationRepository()
+
+	result, _ := repo.GetRealms()
+
+	fmt.Println(result)
+	for _, v := range result {
+		fmt.Println(v.Name)
+	}
+}
