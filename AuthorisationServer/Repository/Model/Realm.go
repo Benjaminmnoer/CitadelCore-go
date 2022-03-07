@@ -1,10 +1,9 @@
 package Model
 
 type Realm struct {
+	Id                   uint64
 	Name                 string
 	Address              string
-	LocalAddress         string
-	LocalSubnetMask      string
 	Port                 uint16
 	Icon                 uint8
 	Flag                 uint8

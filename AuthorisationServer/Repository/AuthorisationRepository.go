@@ -3,68 +3,60 @@ package Repository
 import (
 	model "CitadelCore/AuthorisationServer/Repository/Model"
 	connection "CitadelCore/Shared/Database/Mysql"
-	"fmt"
+	"encoding/hex"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 var (
 	username = "citadelcore"
 	password = "citadelcore"
-	address  = "127.0.0.1:3306"
+	address  = "127.0.0.1:3307"
 	database = "auth"
-)
-
-const (
-	_ACCOUNTINFO_QUERY = "SELECT username, salt, verifier FROM account WHERE username = ?;"
-	_REALMLIST_QUERY   = "SELECT id, name, address, localAddress, localSubnetMask, port, icon, flag, timezone, allowedSecurityLevel, population, gamebuild FROM realmlist WHERE flag <> 3 ORDER BY name;"
-	_REALMCOUNT_QUERY  = "SELECT count(*) FROM realmlist;"
 )
 
 type AuthorisationRepository struct {
 	dbconnection connection.MysqlDatabaseConnection
+	db           *gorm.DB
 }
 
 func (authRepo AuthorisationRepository) GetAccountInformation(accountname string) model.AccountInformation {
-	query := _ACCOUNTINFO_QUERY // strings.Replace(_ACCOUNTINFO_QUERY, "?", accountname, 1)
-	accountinfo := model.AccountInformation{}
-	_, err := authRepo.dbconnection.ExecuteQuerySingleResult(query, &accountinfo, accountname)
-	if err != nil {
-		panic(err)
-	}
-	for i, j := 0, len(accountinfo.Verifier)-1; i < j; i, j = i+1, j-1 {
-		accountinfo.Verifier[i], accountinfo.Verifier[j] = accountinfo.Verifier[j], accountinfo.Verifier[i]
-	}
-	for i, j := 0, len(accountinfo.Salt)-1; i < j; i, j = i+1, j-1 {
-		accountinfo.Salt[i], accountinfo.Salt[j] = accountinfo.Salt[j], accountinfo.Salt[i]
-	}
-
-	return accountinfo
+	value := model.AccountInformation{}
+	authRepo.db.Where("accountname = ?", accountname).First(&value)
+	return value
 }
 
 func (authRepo AuthorisationRepository) GetRealms() ([]model.Realm, error) {
-	// counter := 0
-
-	realm := model.Realm{}
-	resultSet := make([]interface{}, 32)
-	_, err := authRepo.dbconnection.ExecuteQueryMultipleResults(_REALMLIST_QUERY, &realm, resultSet)
-
-	if err != nil {
-		return nil, fmt.Errorf("Error executing query: %s\n", err)
-	}
-
-	results := *new([]model.Realm)
-	for i, v := range resultSet {
-		results[i] = v.(model.Realm)
-	}
-
-	return results, nil
+	realms := []model.Realm{}
+	authRepo.db.Find(&realms)
+	return realms, nil
 }
 
 func InitializeAuthorisationRepository() AuthorisationRepository {
-	conn, err := connection.CreateDatabaseConnection(username, password, address, database)
+	db, err := gorm.Open(mysql.Open("citadelcore:citadelcore@tcp(127.0.0.1:3307)/auth?charset=utf8mb4&parseTime=True&loc=Local"))
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.AutoMigrate(&model.AccountInformation{}, &model.Realm{})
+
+	salt, _ := hex.DecodeString("2C9B1534B3E0D354EB682BF203E76D67BE621399F4DBFE8054C84E3D2977398E")
+	for i, j := 0, len(salt)-1; i < j; i, j = i+1, j-1 {
+		salt[i], salt[j] = salt[j], salt[i]
+	}
+
+	verifier, _ := hex.DecodeString("E475392E52BBF123D14780189E7AF2D1C051FE6A0476360FB012C93DB715EFAB")
+	for i, j := 0, len(verifier)-1; i < j; i, j = i+1, j-1 {
+		verifier[i], verifier[j] = verifier[j], verifier[i]
+	}
+
+	db.FirstOrCreate(&model.AccountInformation{Id: 0, Accountname: "TEST", Salt: salt, Verifier: verifier})
+	db.FirstOrCreate(&model.Realm{Id: 0, Name: "Trintiy", Address: "127.0.0.1", Port: 8085, Icon: 0, Flag: 2, Timezone: 1, AllowedSecurityLevel: 0, Population: 0, Gamebuild: 12340})
 
 	if err != nil {
 		panic(err)
 	}
 
-	return AuthorisationRepository{dbconnection: conn}
+	return AuthorisationRepository{db: db}
 }
