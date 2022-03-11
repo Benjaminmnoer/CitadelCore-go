@@ -1,6 +1,6 @@
 package Model
 
-type RealmInfo struct {
+type Realm struct {
 	Name                 string
 	Address              string
 	LocalAddress         string

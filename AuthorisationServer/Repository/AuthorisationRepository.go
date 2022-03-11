@@ -40,10 +40,10 @@ func (authRepo AuthorisationRepository) GetAccountInformation(accountname string
 	return accountinfo
 }
 
-func (authRepo AuthorisationRepository) GetRealms() ([]model.RealmInfo, error) {
+func (authRepo AuthorisationRepository) GetRealms() ([]model.Realm, error) {
 	// counter := 0
 
-	realm := model.RealmInfo{}
+	realm := model.Realm{}
 	resultSet := make([]interface{}, 32)
 	_, err := authRepo.dbconnection.ExecuteQueryMultipleResults(_REALMLIST_QUERY, &realm, resultSet)
 
@@ -51,9 +51,9 @@ func (authRepo AuthorisationRepository) GetRealms() ([]model.RealmInfo, error) {
 		return nil, fmt.Errorf("Error executing query: %s\n", err)
 	}
 
-	results := *new([]model.RealmInfo)
+	results := *new([]model.Realm)
 	for i, v := range resultSet {
-		results[i] = v.(model.RealmInfo)
+		results[i] = v.(model.Realm)
 	}
 
 	return results, nil
