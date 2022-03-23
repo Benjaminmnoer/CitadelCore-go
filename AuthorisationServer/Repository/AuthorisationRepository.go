@@ -45,7 +45,7 @@ func InitializeAuthorisationRepository() AuthorisationRepository {
 	verifier, _ := hex.DecodeString("2C9B1534B3E0D354EB682BF203E76D67BE621399F4DBFE8054C84E3D2977398E")
 
 	db.FirstOrCreate(&model.AccountInformation{Id: 0, Accountname: "TEST", Salt: salt, Verifier: verifier})
-	db.FirstOrCreate(&model.Realm{Id: 0, Name: "Trintiy", Address: "127.0.0.1", Port: 8085, Icon: 0, Flag: 2, Timezone: 1, AllowedSecurityLevel: 0, Population: 0, Gamebuild: 12340})
+	db.FirstOrCreate(&model.Realm{Id: 1, Name: "Trintiy", Address: "127.0.0.1", Port: 8085, Icon: 0, Flag: 2, Timezone: 1, AllowedSecurityLevel: 0, Population: 0, Gamebuild: 12340})
 
 	if err != nil {
 		panic(err)

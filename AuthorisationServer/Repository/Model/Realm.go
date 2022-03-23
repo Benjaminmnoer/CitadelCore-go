@@ -1,7 +1,7 @@
 package Model
 
 type Realm struct {
-	Id                   uint64
+	Id                   uint8
 	Name                 string
 	Address              string
 	Port                 uint16
@@ -9,6 +9,6 @@ type Realm struct {
 	Flag                 uint8
 	Timezone             uint8
 	AllowedSecurityLevel uint8
-	Population           float32 // Should be unsigned?
+	Population           uint32 // Should be unsigned?
 	Gamebuild            uint32
 }

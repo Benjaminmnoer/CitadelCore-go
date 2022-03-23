@@ -73,7 +73,7 @@ func (connection MysqlDatabaseConnection) ExecuteQuerySingleResult(query string,
 
 	rows := db.QueryRow(query, args...)
 
-	fields := Reflection.GetFields(resultType)
+	fields := Reflection.GetArrayOfFields(resultType)
 	err = rows.Scan(fields...)
 	if err != nil {
 		return nil, fmt.Errorf("mysql-db: error reading results. Error: %s\n", err)
@@ -93,7 +93,7 @@ func (connection MysqlDatabaseConnection) ExecuteQueryMultipleResults(query stri
 
 	var index = 0
 	for rows.Next() {
-		fields := Reflection.GetFields(resultType)
+		fields := Reflection.GetArrayOfFields(resultType)
 		err = rows.Scan(fields...)
 		if err != nil {
 			return nil, fmt.Errorf("mysql-db: error reading results. Error: %s\n", err)

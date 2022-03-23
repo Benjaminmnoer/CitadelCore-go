@@ -16,7 +16,7 @@ type testpointerstruct struct {
 func TestGetFields(t *testing.T) {
 	sut := testpointerstruct{}
 
-	result := Reflection.GetFields(&sut)
+	result := Reflection.GetArrayOfFields(&sut)
 
 	name := result[0].(*string)
 	value := result[1].(*int)

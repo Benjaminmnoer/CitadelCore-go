@@ -5,6 +5,7 @@ import (
 	model "CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
+	"CitadelCore/Shared/Binary"
 	"CitadelCore/Shared/Connection"
 	"bytes"
 	"encoding/binary"
@@ -34,15 +35,16 @@ func HandleSession(conn net.Conn) {
 		fmt.Printf("Command received %d\n", buffer[0])
 		response, done := delegateCommand(buffer[0], buffer, srp)
 		endsession = done
-		output := new(bytes.Buffer)
-		err = binary.Write(output, binary.LittleEndian, response)
+		// output := new(bytes.Buffer)
+		// err = binenc.Write(output, binenc.LittleEndian, response)
+		bytes, err := Binary.Serialize(response)
 
 		if err != nil {
 			fmt.Printf("Error in serializing response! %s\n", err)
 			return
 		}
 
-		size, err = connection.Write(output.Bytes())
+		size, err = connection.Write(bytes)
 
 		if err != nil {
 			fmt.Printf("Error in writing response! %s\n", err)
@@ -92,7 +94,17 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, bool) 
 		return nil, true // Dont expect anymore after this. Perhaps realmlist?
 	case model.RealmList:
 		fmt.Println("Realmlist registered")
-		return nil, true //Model.RealmListResponse
+
+		realmlist, err := Handlers.HandleRealmList(repository)
+
+		if err != nil {
+			fmt.Printf("Error getting realmlist: %e", err)
+			return nil, true
+		}
+
+		fmt.Println(realmlist)
+
+		return realmlist, true //Model.RealmListResponse
 	}
 
 	return nil, true

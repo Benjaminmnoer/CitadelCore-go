@@ -1,14 +1,14 @@
 package Reflection
 
 import (
-	"fmt"
 	"reflect"
 )
 
-func GetFields(object interface{}) []interface{} {
+// Returns the fields of the object as an array.
+func GetArrayOfFields(object interface{}) []interface{} {
 	value := reflect.ValueOf(object).Elem()
-	numfields := value.NumField()
-	fmt.Printf("Value type: %s, number of fields: %d\n", value.Type().Name(), numfields)
+	// numfields := value.NumField()
+	// fmt.Printf("Value type: %s, number of fields: %d\n", value.Type().Name(), numfields)
 
 	fields := make([]interface{}, value.NumField())
 
