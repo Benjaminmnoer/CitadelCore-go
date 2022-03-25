@@ -13,8 +13,9 @@ func HandleRealmList(repository Repository.AuthorisationRepository) (Model.Realm
 		return Model.RealmListResponse{}, fmt.Errorf("Error getting realms\n%s", err)
 	}
 
-	result := Model.RealmListResponse{RealmCount: 0, PacketSize: 8, Command: Model.RealmList, Realms: make([]Model.RealmInfo, len(realms)), Wtf: 0x10, Dis: 0}
+	result := Model.RealmListResponse{RealmCount: 0, PacketSize: 8, Command: Model.RealmList, Realms: make([]Model.RealmInfo, len(realms)), Wtf: 0x10, Dis: 0x00}
 	for _, realm := range realms {
+		fmt.Printf("Found realm with id %d\n", realm.Id)
 		var flags uint8 = 0
 
 		realminfo := Model.RealmInfo{
@@ -25,6 +26,7 @@ func HandleRealmList(repository Repository.AuthorisationRepository) (Model.Realm
 			Endpoint:   realm.Address + ":" + fmt.Sprint(realm.Port),
 			Population: uint32(realm.Population),
 			Characters: 0, //TODO: Add query for this, or add this to already existing query.
+			Timezone:   realm.Timezone,
 			RealmId:    realm.Id,
 		}
 		result.Realms[result.RealmCount] = realminfo

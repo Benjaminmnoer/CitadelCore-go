@@ -18,5 +18,6 @@ type RealmInfo struct {
 	Endpoint   string
 	Population uint32
 	Characters uint8
+	Timezone   uint8
 	RealmId    uint8
 }

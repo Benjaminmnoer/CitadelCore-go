@@ -1,6 +1,7 @@
 package Handlers
 
 import (
+	"CitadelCore/AuthorisationServer/Legacy"
 	"CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/SRP"
 	"encoding/hex"
@@ -42,6 +43,16 @@ func HandleLogonProof(dto Model.LogonProof, srp *SRP.SRP6) (Model.LogonProofResp
 		accountflagsarray[i], accountflagsarray[j] = accountflagsarray[j], accountflagsarray[i]
 	}
 	response.AccountFlags = accountflagsarray
+
+	temp := srp.SessionKey.Bytes()
+	for i, j := 0, len(temp)-1; i < j; i, j = i+1, j-1 {
+		temp[i], temp[j] = temp[j], temp[i]
+	}
+
+	err = Legacy.SetSessionKey(temp, srp.Username)
+	if err != nil {
+		return Model.LogonProofResponse{}, fmt.Errorf("Couldn't set auth key\n%s\n", err)
+	}
 
 	return response, nil
 }

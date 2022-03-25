@@ -34,7 +34,7 @@ func Serialize(object interface{}) ([]byte, error) {
 				}
 				buffer.Write(data)
 			}
-			buffer.Write([]byte{0})
+			// buffer.Write([]byte{0})
 		case reflect.Struct:
 			data, err := Serialize(field.Interface())
 			if err != nil {
