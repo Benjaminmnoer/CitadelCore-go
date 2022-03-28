@@ -2,7 +2,7 @@ package Session
 
 import (
 	Handlers "CitadelCore/AuthorisationServer/Handler"
-	model "CitadelCore/AuthorisationServer/Model"
+	"CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
 	"CitadelCore/Shared/Binary"
@@ -14,6 +14,7 @@ import (
 )
 
 var repository = Repository.InitializeAuthorisationRepository()
+var accountname = ""
 
 func HandleSession(conn net.Conn) {
 	connection := Connection.CreateTcpConnection(conn, "500ms")
@@ -24,19 +25,22 @@ func HandleSession(conn net.Conn) {
 	for !endsession {
 		fmt.Println("Reading data")
 		buffer := make([]byte, 256)
-		size, err := connection.Read(&buffer)
+		_, err := connection.Read(&buffer)
 
 		if err != nil {
 			fmt.Printf("Error in reading message! %s\n", err)
-			return
+			break
 		}
 
-		fmt.Printf("Size of message read %d\n", size)
-		fmt.Printf("Command received %d\n", buffer[0])
-		response, done := delegateCommand(buffer[0], buffer, srp)
+		response, err, done := delegateCommand(buffer[0], buffer, srp)
+
+		if err != nil {
+			// TODO: Log instead of print to console
+			fmt.Printf("Error in auth session.\n%s\n", err)
+			break
+		}
+
 		endsession = done
-		// output := new(bytes.Buffer)
-		// err = binenc.Write(output, binenc.LittleEndian, response)
 		bytes, err := Binary.Serialize(response)
 
 		if err != nil {
@@ -44,14 +48,12 @@ func HandleSession(conn net.Conn) {
 			return
 		}
 
-		size, err = connection.Write(bytes)
+		_, err = connection.Write(bytes)
 
 		if err != nil {
 			fmt.Printf("Error in writing response! %s\n", err)
 			return
 		}
-
-		fmt.Printf("Wrote %d bytes\n", size)
 
 		if done {
 			// TODO: Move logic elsewhere
@@ -62,54 +64,73 @@ func HandleSession(conn net.Conn) {
 	fmt.Println("Session finished")
 }
 
-func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, bool) {
+func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error, bool) {
 	// response := interface{}
 	switch cmd {
-	case model.AuthLogonChallenge:
+	case Model.AuthLogonChallenge:
 		fmt.Println("AuthlogonChallenge registered")
-		logonchallenge := model.LogonChallenge{}
+		logonchallenge := Model.LogonChallenge{}
 		convertData(data, &logonchallenge)
+		accountname = logonchallenge.GetAccountName()
 
 		response := Handlers.HandleLogonChallenge(logonchallenge, repository, srp)
 
-		return response, false // Expect more
-	case model.AuthLogonProof:
+		return response, nil, false // Expect logon proof
+	case Model.AuthLogonProof:
 		fmt.Println("AuthlogonProof registered")
-		logonproof := model.LogonProof{}
+		logonproof := Model.LogonProof{}
 		convertData(data, &logonproof)
 
 		response, err := Handlers.HandleLogonProof(logonproof, srp)
 
 		if err != nil {
-			fmt.Printf("Error in handling logon proof: %e\n", err)
-			return nil, true
+			return nil, fmt.Errorf("Error in handling logon proof: %e\n", err), true
 		}
 
-		return response, false // Expect realmlist command after proof.
-	case model.AuthReconnectChallenge:
+		return response, nil, false // Expect realmlist command after proof.
+	case Model.AuthReconnectChallenge:
 		fmt.Println("AuthReconnectChallenge registered")
-		return nil, true
-	case model.AuthReconnectProof:
-		fmt.Println("AuthReconnectProof registered")
-		return nil, true // Dont expect anymore after this. Perhaps realmlist?
-	case model.RealmList:
+		reconnectChallenge := Model.LogonChallenge{}
+		convertData(data, &reconnectChallenge)
+
+		response, err := Handlers.HandleReconnectChallenge(reconnectChallenge)
+
+		if err != nil {
+			return nil, err, true
+		}
+
+		return response, nil, true
+	case Model.AuthReconnectProof:
+		fmt.Println("AuthReconnectChallenge registered")
+		reconnectProof := Model.ReconnectProof{}
+		convertData(data, &reconnectProof)
+
+		response, err := Handlers.HandleReconnectProof(reconnectProof, accountname)
+
+		if err != nil {
+			return nil, err, true
+		}
+
+		return response, nil, true // Do we expect realm list after this? We will see i guess.
+	case Model.RealmList:
 		fmt.Println("Realmlist registered")
 
 		realmlist, err := Handlers.HandleRealmList(repository)
 
 		if err != nil {
 			fmt.Printf("Error getting realmlist: %e", err)
-			return nil, true
+			return nil, err, true
 		}
 
 		fmt.Println(realmlist)
 
-		return realmlist, true //Model.RealmListResponse
+		return realmlist, nil, true //Model.RealmListResponse
 	}
 
-	return nil, true
+	return nil, fmt.Errorf("No matching command was found"), true
 }
 
+// TODO: Move to more reasonable place.
 func convertData(data []byte, result interface{}) {
 	reader := bytes.NewReader(data)
 	error := binary.Read(reader, binary.LittleEndian, result)

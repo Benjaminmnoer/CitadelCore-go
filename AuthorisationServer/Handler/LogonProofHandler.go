@@ -1,9 +1,9 @@
 package Handlers
 
 import (
-	"CitadelCore/AuthorisationServer/Legacy"
 	"CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/SRP"
+	"CitadelCore/Legacy"
 	"encoding/hex"
 	"fmt"
 )
@@ -51,7 +51,7 @@ func HandleLogonProof(dto Model.LogonProof, srp *SRP.SRP6) (Model.LogonProofResp
 
 	err = Legacy.SetSessionKey(temp, srp.Username)
 	if err != nil {
-		return Model.LogonProofResponse{}, fmt.Errorf("Couldn't set auth key\n%s\n", err)
+		return Model.LogonProofResponse{}, fmt.Errorf("Couldn't set auth key in legacy database.\n%s\n", err)
 	}
 
 	return response, nil

@@ -3,7 +3,7 @@ package Model
 type LogonChallengeResponse struct {
 	Command          uint8
 	ProtocolVersion  uint8
-	Status           AuthorisationResult
+	Status           uint8
 	EphemeralPublicB [32]byte
 	GeneratorSize    uint8
 	Generator        uint8
