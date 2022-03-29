@@ -49,6 +49,7 @@ func GetSessionKey(username string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB error, %s\n", err)
 	}
+	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -59,12 +60,14 @@ func GetSessionKey(username string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Query error, %s\n", err)
 	}
-	result := new([]byte)
-	err = rows.Scan(result)
+	defer rows.Close()
+
+	rows.Next()
+	result := make([]byte, 20)
+	err = rows.Scan(&result)
 	if err != nil {
 		return nil, fmt.Errorf("Scan error, %s\n", err)
 	}
 
-	db.Close()
-	return *result, nil
+	return result, nil
 }

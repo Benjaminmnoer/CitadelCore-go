@@ -15,6 +15,7 @@ import (
 
 var repository = Repository.InitializeAuthorisationRepository()
 var accountname = ""
+var reconnectproof [16]byte
 
 func HandleSession(conn net.Conn) {
 	connection := Connection.CreateTcpConnection(conn, "500ms")
@@ -94,18 +95,19 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error,
 		convertData(data, &reconnectChallenge)
 
 		response, err := Handlers.HandleReconnectChallenge(reconnectChallenge)
+		reconnectproof = response.Salt
 
 		if err != nil {
 			return nil, err, true
 		}
 
-		return response, nil, true
+		return response, nil, false
 	case Model.AuthReconnectProof:
-		fmt.Println("AuthReconnectChallenge registered")
+		fmt.Println("AuthReconnectProof registered")
 		reconnectProof := Model.ReconnectProof{}
 		convertData(data, &reconnectProof)
 
-		response, err := Handlers.HandleReconnectProof(reconnectProof, accountname)
+		response, err := Handlers.HandleReconnectProof(reconnectProof, accountname, reconnectproof)
 
 		if err != nil {
 			return nil, err, true
