@@ -1,8 +1,8 @@
 package Model
 
 type LogonChallenge struct {
-	Cmd               uint8
-	Error             uint8
+	Command           uint8
+	ProtocolVersion   uint8
 	Size              uint16
 	Gamename          [4]byte
 	Major             uint8
