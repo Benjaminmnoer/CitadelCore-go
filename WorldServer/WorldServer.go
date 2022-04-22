@@ -1,11 +1,16 @@
 package WorldServer
 
 import (
-	"CitadelCore/Shared/Socket"
+	"CitadelCore/WorldServer/Session"
 	"fmt"
 )
 
 func Start() {
-	fmt.Println("Starting authserver...")
-	Socket.Start(8828)
+	fmt.Println("Starting worldserver...")
+
+	// Start connections in other threads.
+	go Session.StartSession()
+
+	// Game loop should occupy main thread
+	GameLoop()
 }

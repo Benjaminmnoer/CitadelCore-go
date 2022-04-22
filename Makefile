@@ -8,5 +8,8 @@ install:
 clean:
 	rm -rf ./bin
 
-run authserver:
+run-authserver:
 	go run Command/AuthorisationServer/main.go
+
+run-worldserver:
+	go run Command/WorldServer/main.go

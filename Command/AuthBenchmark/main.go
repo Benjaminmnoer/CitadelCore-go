@@ -2,7 +2,10 @@ package main
 
 import (
 	"CitadelCore/AuthorisationServer/Model"
+	"bytes"
+	"encoding/binary"
 	"fmt"
+	"net"
 	"os"
 )
 
@@ -38,5 +41,19 @@ func main() {
 		Operatingsystem: os,
 		Country:         country,
 	}
+	buffer := new(bytes.Buffer)
+	binary.Write(buffer, binary.LittleEndian, logonchallenge)
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%s", ip, port))
 
+	if err != nil {
+		fmt.Printf("Error in resolving address\n%e", err)
+		return
+	}
+
+	conn, err := net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		fmt.Printf("Error in dialing address\n%e", err)
+		return
+	}
+	conn.Write(buffer.Bytes())
 }
