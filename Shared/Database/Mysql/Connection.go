@@ -1,7 +1,7 @@
 package Dbconnection
 
 import (
-	"CitadelCore/Shared/Reflection"
+	"CitadelCore/Shared/Helpers/Reflection"
 	"database/sql"
 	"errors"
 	"fmt"

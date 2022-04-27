@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 var clientQueue []net.Conn
@@ -17,7 +18,7 @@ func StartSession() {
 	clientQueue = make([]net.Conn, maxNumberOfConnections)
 	nHandlers = 4
 
-	server, _ := net.Listen("tcp", "127.0.0.1:3724")
+	server, _ := net.Listen("tcp", "127.0.0.1:8085")
 
 	for i := 0; i < nHandlers; i++ {
 		go handleConnections()
@@ -43,6 +44,11 @@ func handleConnections() {
 	for {
 		queueLock.Lock()
 		defer queueLock.Unlock()
+
+		if len(clientQueue) <= 0 {
+			time.Sleep(1 * time.Millisecond)
+			continue
+		}
 
 		connection := clientQueue[0]
 		clientQueue = clientQueue[1:]

@@ -1,23 +1,43 @@
 package Session
 
 import (
-	Handlers "CitadelCore/AuthorisationServer/Handler"
 	"CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
-	"CitadelCore/Shared/Binary"
+	Handlers "CitadelCore/AuthorisationServer/Session/Handler"
+	"CitadelCore/Shared/Communication"
 	"CitadelCore/Shared/Connection"
+	"CitadelCore/Shared/Helpers/Binary"
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"net"
 )
 
-var repository = Repository.InitializeAuthorisationRepository()
 var accountname = ""
 var reconnectproof [16]byte
 
-func HandleSession(conn net.Conn) {
+type Session struct {
+	repository     Repository.AuthorisationRepository
+	accountName    string
+	reconnectProof [16]byte
+}
+
+func StartSession(repo Repository.AuthorisationRepository) Session {
+	return Session{repository: repo}
+}
+
+// TODO: Move to more reasonable place.
+func convertData(data []byte, result interface{}) {
+	reader := bytes.NewReader(data)
+	error := binary.Read(reader, binary.LittleEndian, result)
+
+	if error != nil {
+		fmt.Printf("Error in binary conversion: %s\n", error)
+		panic(error)
+	}
+}
+
+func (s Session) HandleSession(client Communication.Client) {
 	connection := Connection.CreateTcpConnection(conn, "500ms")
 	endsession := false
 	srp := SRP.NewSrp()
@@ -65,16 +85,15 @@ func HandleSession(conn net.Conn) {
 	fmt.Println("Session finished")
 }
 
-func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error, bool) {
-	// response := interface{}
+func (s Session) DelegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error, bool) {
 	switch cmd {
 	case Model.AuthLogonChallenge:
 		fmt.Println("AuthlogonChallenge registered")
 		logonchallenge := Model.LogonChallenge{}
 		convertData(data, &logonchallenge)
-		accountname = logonchallenge.GetAccountName()
+		s.accountName = logonchallenge.GetAccountName()
 
-		response := Handlers.HandleLogonChallenge(logonchallenge, repository, srp)
+		response := Handlers.HandleLogonChallenge(logonchallenge, s.repository, srp)
 
 		return response, nil, false // Expect logon proof
 	case Model.AuthLogonProof:
@@ -85,7 +104,7 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error,
 		response, err := Handlers.HandleLogonProof(logonproof, srp)
 
 		if err != nil {
-			return nil, fmt.Errorf("Error in handling logon proof: %e\n", err), true
+			return nil, fmt.Errorf("error in handling logon proof: %e", err), true
 		}
 
 		return response, nil, false // Expect realmlist command after proof.
@@ -107,7 +126,7 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error,
 		reconnectProof := Model.ReconnectProof{}
 		convertData(data, &reconnectProof)
 
-		response, err := Handlers.HandleReconnectProof(reconnectProof, accountname, reconnectproof)
+		response, err := Handlers.HandleReconnectProof(reconnectProof, accountname, s.reconnectProof)
 
 		if err != nil {
 			return nil, err, true
@@ -117,7 +136,7 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error,
 	case Model.RealmList:
 		fmt.Println("Realmlist registered")
 
-		realmlist, err := Handlers.HandleRealmList(repository)
+		realmlist, err := Handlers.HandleRealmList(s.repository)
 
 		if err != nil {
 			fmt.Printf("Error getting realmlist: %e", err)
@@ -129,16 +148,5 @@ func delegateCommand(cmd uint8, data []byte, srp *SRP.SRP6) (interface{}, error,
 		return realmlist, nil, true //Model.RealmListResponse
 	}
 
-	return nil, fmt.Errorf("No matching command was found"), true
-}
-
-// TODO: Move to more reasonable place.
-func convertData(data []byte, result interface{}) {
-	reader := bytes.NewReader(data)
-	error := binary.Read(reader, binary.LittleEndian, result)
-
-	if error != nil {
-		fmt.Printf("Error in binary conversion: %s\n", error)
-		panic(error)
-	}
+	return nil, fmt.Errorf("no matching command was found"), true
 }
