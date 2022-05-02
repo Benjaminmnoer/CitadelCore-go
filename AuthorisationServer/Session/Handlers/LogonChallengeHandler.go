@@ -2,13 +2,11 @@ package Handlers
 
 import (
 	"CitadelCore/AuthorisationServer/Model"
-	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
 	"encoding/hex"
 )
 
-func HandleLogonChallenge(dto Model.LogonChallenge,
-	repository Repository.AuthorisationRepository, srp *SRP.SRP6) Model.LogonChallengeResponse {
+func HandleLogonChallenge(dto Model.LogonChallenge, srp *SRP.SRP6) Model.LogonChallengeResponse {
 	accountinfo := repository.GetAccountInformation(dto.GetAccountName())
 	err := srp.StartSRP(accountinfo.Accountname, accountinfo.Salt[:], accountinfo.Verifier[:])
 

@@ -1,7 +1,7 @@
-package Repository_test
+package AuthorisationRepository_test
 
 import (
-	"CitadelCore/AuthorisationServer/Repository"
+	"CitadelCore/AuthorisationServer/AuthorisationRepository"
 	"encoding/hex"
 	"fmt"
 	"testing"
@@ -9,7 +9,7 @@ import (
 
 func TestGetAccountInformation(t *testing.T) {
 	accountname := "TEST"
-	repo := Repository.InitializeAuthorisationRepository()
+	repo := AuthorisationRepository.InitializeAuthorisationRepository()
 
 	result := repo.GetAccountInformation(accountname)
 
@@ -24,7 +24,7 @@ func TestGetAccountInformation(t *testing.T) {
 }
 
 func TestGetRealm(t *testing.T) {
-	repo := Repository.InitializeAuthorisationRepository()
+	repo := AuthorisationRepository.InitializeAuthorisationRepository()
 
 	result, _ := repo.GetRealms()
 

@@ -1,8 +1,8 @@
 package Handlers_test
 
 import (
+	"CitadelCore/AuthorisationServer/AuthorisationRepository"
 	"CitadelCore/AuthorisationServer/Model"
-	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
 	"CitadelCore/AuthorisationServer/Session/Handlers"
 	"encoding/hex"
@@ -12,8 +12,8 @@ import (
 
 func TestLoginHandlers(t *testing.T) {
 	// TODO: Use mock or test db instead.
-	repo := Repository.InitializeAuthorisationRepository()
-	SRP.InitializaSRP()
+	repo := AuthorisationRepository.InitializeAuthorisationRepository()
+		SRP.InitializaSRP()
 	srp := SRP.NewSrp()
 	privateb, _ := hex.DecodeString("1679C11B7751DF582C7560BF13EC0AF56720A25DA754F1A4C9018DD959E5E3AA")
 	srp.EphemeralPrivateB.SetBytes(privateb)

@@ -53,7 +53,7 @@ func (s AuthorisationSessionHandler) delegateCommand(cmd uint8, data []byte, ses
 		convertData(data, &logonchallenge)
 		session.AccountName = logonchallenge.GetAccountName()
 
-		response := Handlers.HandleLogonChallenge(logonchallenge, s.repository, session)
+		response := Handlers.HandleLogonChallenge(logonchallenge, session)
 		result, err := convertToBytes(response)
 
 		if err != nil {
@@ -66,7 +66,7 @@ func (s AuthorisationSessionHandler) delegateCommand(cmd uint8, data []byte, ses
 		logonproof := Model.LogonProof{}
 		convertData(data, &logonproof)
 
-		response, err := Handlers.HandleLogonProof(logonproof, srp)
+		response, err := Handlers.HandleLogonProof(logonproof, session)
 
 		if err != nil {
 			return nil, Communication.EndConnection, fmt.Errorf("error in handling logon proof: %e", err)
@@ -85,7 +85,7 @@ func (s AuthorisationSessionHandler) delegateCommand(cmd uint8, data []byte, ses
 		convertData(data, &reconnectChallenge)
 
 		response, err := Handlers.HandleReconnectChallenge(reconnectChallenge)
-		reconnectproof = response.Salt
+		session.ReconnectProof = response.Salt
 
 		if err != nil {
 			return nil, Communication.EndConnection, err
@@ -103,7 +103,7 @@ func (s AuthorisationSessionHandler) delegateCommand(cmd uint8, data []byte, ses
 		reconnectProof := Model.ReconnectProof{}
 		convertData(data, &reconnectProof)
 
-		response, err := Handlers.HandleReconnectProof(reconnectProof, accountname, s.reconnectProof)
+		response, err := Handlers.HandleReconnectProof(reconnectProof, session)
 
 		if err != nil {
 			return nil, Communication.EndConnection, err
@@ -119,7 +119,7 @@ func (s AuthorisationSessionHandler) delegateCommand(cmd uint8, data []byte, ses
 	case Model.RealmList:
 		fmt.Println("Realmlist registered")
 
-		response, err := Handlers.HandleRealmList(s.repository)
+		response, err := Handlers.HandleRealmList()
 
 		if err != nil {
 			fmt.Printf("Error getting realmlist: %e", err)
