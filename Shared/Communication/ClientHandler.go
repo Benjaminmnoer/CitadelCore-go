@@ -8,11 +8,12 @@ import (
 
 type ClientHandler struct {
 	clients         DataStructures.ConcurrentQueue
+	sessionHandler  SessionHandler
 	numberOfThreads int
 }
 
-func CreateClientHandler(nThreads int) ClientHandler {
-	return ClientHandler{clients: DataStructures.ConcurrentQueue{}, numberOfThreads: nThreads}
+func CreateClientHandler(sessionHandler SessionHandler, nThreads int) *ClientHandler {
+	return &ClientHandler{clients: DataStructures.ConcurrentQueue{}, sessionHandler: sessionHandler, numberOfThreads: nThreads}
 }
 
 func (ch *ClientHandler) AddClient(client Client) {
@@ -45,15 +46,39 @@ func (ch *ClientHandler) handleConnection() error {
 			continue
 		}
 
+	READ:
 		data, err := client.Read()
 
 		if err != nil {
-			// TODO: Log error and continue
+			// TODO: Log error and continue.
 			continue
 		}
 
-		size := len(data)
+		response, status, err := ch.sessionHandler.HandleSession(client, data)
 
-		fmt.Printf("%d", size)
+		if err != nil {
+			// TODO: Log error and handle connection.
+			client.Dispose()
+			continue
+		}
+
+		err = client.Write(response)
+
+		if err != nil {
+			// TODO: Log error and handle connection.
+			client.Dispose()
+			continue
+		}
+
+		if status == KeepClient {
+			goto READ
+		} else if status == EndConnection {
+			client.Dispose()
+		} else if status == EnqueueClient {
+			ch.AddClient(client)
+		} else {
+			client.Dispose()
+			return fmt.Errorf("unhandled client status message")
+		}
 	}
 }

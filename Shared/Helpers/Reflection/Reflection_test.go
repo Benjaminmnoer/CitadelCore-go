@@ -1,7 +1,7 @@
 package Reflection_test
 
 import (
-	"CitadelCore/Shared/Reflection"
+	"CitadelCore/Shared/Helpers/Reflection"
 	"crypto/rand"
 	"fmt"
 	"testing"

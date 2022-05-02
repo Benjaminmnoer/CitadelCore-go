@@ -11,7 +11,7 @@ func (c Client) GetEndpoint() string {
 	return c.Connection.RemoteAddr().String()
 }
 
-func (c Client) Send(message []byte) error {
+func (c Client) Write(message []byte) error {
 	_, err := c.Connection.Write(message)
 	return err
 }
@@ -20,4 +20,8 @@ func (c Client) Read() ([]byte, error) {
 	buffer := make([]byte, 1024)
 	_, err := c.Connection.Read(buffer)
 	return buffer, err
+}
+
+func (c Client) Dispose() error {
+	return c.Connection.Close()
 }

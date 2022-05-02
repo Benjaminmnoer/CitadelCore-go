@@ -1,14 +1,14 @@
 package Handlers
 
 import (
-	model "CitadelCore/AuthorisationServer/Model"
+	"CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
 	"encoding/hex"
 )
 
-func HandleLogonChallenge(dto model.LogonChallenge,
-	repository Repository.AuthorisationRepository, srp *SRP.SRP6) model.LogonChallengeResponse {
+func HandleLogonChallenge(dto Model.LogonChallenge,
+	repository Repository.AuthorisationRepository, srp *SRP.SRP6) Model.LogonChallengeResponse {
 	accountinfo := repository.GetAccountInformation(dto.GetAccountName())
 	err := srp.StartSRP(accountinfo.Accountname, accountinfo.Salt[:], accountinfo.Verifier[:])
 
@@ -19,11 +19,11 @@ func HandleLogonChallenge(dto model.LogonChallenge,
 		panic(err)
 	}
 
-	response := model.LogonChallengeResponse{}
+	response := Model.LogonChallengeResponse{}
 
-	response.Command = model.AuthLogonChallenge
+	response.Command = Model.AuthLogonChallenge
 	response.ProtocolVersion = 0
-	response.Status = model.Success
+	response.Status = Model.Success
 	var saltarray [32]byte
 	copy(saltarray[:], accountinfo.Salt)
 	for i, j := 0, len(saltarray)-1; i < j; i, j = i+1, j-1 {

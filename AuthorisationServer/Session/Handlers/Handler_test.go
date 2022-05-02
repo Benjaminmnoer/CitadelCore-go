@@ -1,10 +1,10 @@
 package Handlers_test
 
 import (
-	Handlers "CitadelCore/AuthorisationServer/Handler"
 	"CitadelCore/AuthorisationServer/Model"
 	"CitadelCore/AuthorisationServer/Repository"
 	"CitadelCore/AuthorisationServer/SRP"
+	"CitadelCore/AuthorisationServer/Session/Handlers"
 	"encoding/hex"
 	"fmt"
 	"testing"
